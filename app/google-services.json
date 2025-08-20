@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "504292767530",
+    "project_id": "eams-7ce24",
+    "storage_bucket": "eams-7ce24.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:504292767530:android:e5ff50b51eef609421d053",
+        "android_client_info": {
+          "package_name": "com.example.EAMS"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "504292767530-ruci0jp33pcrggh9aenp02th6bm3jqd4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.EAMS",
+            "certificate_hash": "50c3d3a2ed93dfe9511321df806d6f24409d53b8"
+          }
+        },
+        {
+          "client_id": "504292767530-jml35h7sfv3ppho3aue7lr71njulbn4q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMUodFavJiGs7peAnjSKWkguefkJzgzYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "504292767530-jml35h7sfv3ppho3aue7lr71njulbn4q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
