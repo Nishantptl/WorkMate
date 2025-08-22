@@ -8,7 +8,7 @@
     android:padding="24dp"
     android:gravity="center"
     android:background="@color/white"
-    tools:context=".HomeActivity">
+    tools:context=".Activities.HomeActivity">
 
   <androidx.cardview.widget.CardView
       android:id="@+id/cardAdmin"

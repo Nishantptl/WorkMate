@@ -1,12 +1,11 @@
-package com.example.EAMS
+package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.example.EAMS.Activities.LoginActivity
+import com.example.EAMS.R
 
 class HomeActivity : AppCompatActivity() {
 

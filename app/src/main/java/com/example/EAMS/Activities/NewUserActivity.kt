@@ -1,9 +1,13 @@
-package com.example.EAMS
+package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.EAMS.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -79,12 +83,11 @@ class NewUserActivity : AppCompatActivity() {
                         .set(userMap)
                         .addOnSuccessListener {
                             showToast("Registered successfully as $role!")
-//                            if (role == "ADMIN") {
-//                                startActivity(Intent(this, AdminDashboardActivity::class.java))
-//                            } else {
+                            if (role == "ADMIN") {
+                                startActivity(Intent(this, AdminDashboardActivity::class.java))
+                            } else {
 //                                startActivity(Intent(this, EmployeeDashboardActivity::class.java))
-//                            }
-                            finish()
+                            }
                         }
                         .addOnFailureListener { e ->
                             showToast("Firestore error: ${e.localizedMessage}")

@@ -1,9 +1,14 @@
-package com.example.EAMS
+package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.EAMS.Activities.NewUserActivity
+import com.example.EAMS.R
 import com.google.firebase.auth.FirebaseAuth
 
 class LoginActivity : AppCompatActivity() {
@@ -62,12 +67,11 @@ class LoginActivity : AppCompatActivity() {
 
                     if (role == "ADMIN") {
                         showToast("Welcome Admin!")
-//                        startActivity(Intent(this, AdminDashboardActivity::class.java))
+                        startActivity(Intent(this, AdminDashboardActivity::class.java))
                     } else {
                         showToast("Welcome Employee!")
 //                        startActivity(Intent(this, EmployeeDashboardActivity::class.java))
                     }
-                    finish()
                 } else {
                     showToast("Login failed: ${task.exception?.localizedMessage}")
                 }
