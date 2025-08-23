@@ -2,10 +2,7 @@ package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.EAMS.R
 import com.google.firebase.auth.FirebaseAuth
@@ -75,8 +72,11 @@ class NewUserActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
                     val userMap = hashMapOf(
-                        "uid" to userId, "name" to name,
-                        "email" to email, "role" to role)
+                        "uid" to userId,
+                        "name" to name,
+                        "email" to email,
+                        "role" to role
+                    )
 
                     firestore.collection(role.lowercase())
                         .document(userId)
@@ -86,7 +86,7 @@ class NewUserActivity : AppCompatActivity() {
                             if (role == "ADMIN") {
                                 startActivity(Intent(this, AdminDashboardActivity::class.java))
                             } else {
-//                                startActivity(Intent(this, EmployeeDashboardActivity::class.java))
+                                // startActivity(Intent(this, EmployeeDashboardActivity::class.java))
                             }
                         }
                         .addOnFailureListener { e ->

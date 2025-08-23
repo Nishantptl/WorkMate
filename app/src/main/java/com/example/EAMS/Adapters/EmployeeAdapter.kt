@@ -1,6 +1,5 @@
 package com.example.EAMS.Adapters
 
-import android.media.Image
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,9 +17,10 @@ class EmployeeAdapter(
     class EmployeeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtEmployeeName)
         val txtEmail: TextView = itemView.findViewById(R.id.txtEmployeeEmail)
-        val txtRole: TextView = itemView.findViewById(R.id.txtEmployeeRole)
         val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
         val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+        val txtDepartment: TextView = itemView.findViewById(R.id.txtDepartment)
+        val txtJoiningDate: TextView = itemView.findViewById(R.id.txtJoiningDate)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmployeeViewHolder {
@@ -33,7 +33,8 @@ class EmployeeAdapter(
         val employee = employeeList[position]
         holder.txtName.text = employee.name
         holder.txtEmail.text = employee.email
-        holder.txtRole.text = employee.role
+        holder.txtDepartment.text = employee.department
+        holder.txtJoiningDate.text = employee.joiningDate
 
         holder.btnEdit.setOnClickListener { onEdit(employee) }
         holder.btnDelete.setOnClickListener { onDelete(employee) }

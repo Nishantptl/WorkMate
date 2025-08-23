@@ -9,6 +9,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.example.EAMS.Model.*
 import com.example.EAMS.Adapters.*
 import com.google.firebase.auth.FirebaseAuth
+import org.w3c.dom.Text
 
 class EmployeeFragment : Fragment() {
 
@@ -86,18 +89,37 @@ class EmployeeFragment : Fragment() {
             .inflate(R.layout.dialog_add_employee, null)
 
         val edtName = dialogView.findViewById<EditText>(R.id.edtName)
+        val edtDepartment = dialogView.findViewById<EditText>(R.id.edtDepartment)
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
-        val edtRole = dialogView.findViewById<EditText>(R.id.edtRole)
         val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
+        val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
+        val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
+
+        // DatePicker for joining date
+        edtJoiningDate.setOnClickListener {
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH)
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+
+            val datePicker = android.app.DatePickerDialog(requireContext(),
+                { _, selectedYear, selectedMonth, selectedDay ->
+                    txtJoiningDate.setText("$selectedDay-${selectedMonth + 1}-$selectedYear")
+                }, year, month, day
+            )
+            datePicker.show()
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Add Employee")
             .setView(dialogView)
             .setPositiveButton("Add") { _, _ ->
                 val name = edtName.text.toString()
+                val department = edtDepartment.text.toString()
                 val email = edtEmail.text.toString()
-                val role = edtRole.text.toString().uppercase()
                 val password = edtPassword.text.toString()
+                val joiningDate = txtJoiningDate.text.toString()
+                val role = "EMPLOYEE"
 
                 if (email.isNotEmpty() && password.isNotEmpty()) {
                     val auth = FirebaseAuth.getInstance()
@@ -107,13 +129,14 @@ class EmployeeFragment : Fragment() {
                             val userMap = hashMapOf(
                                 "uid" to userId,
                                 "name" to name,
+                                "department" to department,
                                 "email" to email,
-                                "role" to role
+                                "role" to role,
+                                "joiningDate" to joiningDate
                             )
-                            db.collection("employee")   
+                            db.collection("employee")
                                 .document(userId)
                                 .set(userMap)
-
                         }
                         .addOnFailureListener { e ->
                             Toast.makeText(requireContext(),
@@ -130,12 +153,29 @@ class EmployeeFragment : Fragment() {
             .inflate(R.layout.dialog_add_employee, null)
 
         val edtName = dialogView.findViewById<EditText>(R.id.edtName)
+        val edtDepartment = dialogView.findViewById<EditText>(R.id.edtDepartment)
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
-        val edtRole = dialogView.findViewById<EditText>(R.id.edtRole)
+        val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
+        val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
 
         edtName.setText(employee.name)
+        edtDepartment.setText(employee.department)
         edtEmail.setText(employee.email)
-        edtRole.setText(employee.role)
+        txtJoiningDate.setText(employee.joiningDate)
+
+        edtJoiningDate.setOnClickListener {
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH)
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+
+            val datePicker = android.app.DatePickerDialog(requireContext(),
+                { _, selectedYear, selectedMonth, selectedDay ->
+                    txtJoiningDate.setText("$selectedDay-${selectedMonth + 1}-$selectedYear")
+                }, year, month, day
+            )
+            datePicker.show()
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Update Employee")
@@ -143,8 +183,9 @@ class EmployeeFragment : Fragment() {
             .setPositiveButton("Update") { _, _ ->
                 val updates = mapOf(
                     "name" to edtName.text.toString(),
+                    "department" to edtDepartment.text.toString(),
                     "email" to edtEmail.text.toString(),
-                    "role" to edtRole.text.toString().uppercase()
+                    "joiningDate" to txtJoiningDate.text.toString()
                 )
                 db.collection("employee")
                     .document(employee.id)

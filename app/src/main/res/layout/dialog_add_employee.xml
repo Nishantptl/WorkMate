@@ -1,30 +1,57 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:padding="16dp"
+    android:layout_margin="20dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
     <EditText
         android:id="@+id/edtName"
-        android:hint="Name"
+        android:hint="Employee Name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/edtDepartment"
+        android:hint="Employee Department"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/edtEmail"
-        android:hint="Email"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <EditText
-        android:id="@+id/edtRole"
-        android:hint="Role"
+        android:hint="Employee Email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/edtPassword"
-        android:hint="Password"
+        android:hint="Enter Password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:id="@+id/layoutJoiningDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+>
+        <TextView
+            android:id="@+id/txtJoiningDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Joining Date"
+            android:textSize="16sp"
+            android:padding="10dp"
+            android:textColor="@android:color/black" />
+
+        <ImageButton
+            android:id="@+id/btnPickDate"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_calendar"
+            android:background="@color/white"/>
+    </LinearLayout>
+
 </LinearLayout>
