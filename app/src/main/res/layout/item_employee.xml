@@ -41,11 +41,13 @@
                     android:src="@drawable/ic_edit"/>
 
                 <ImageButton
-                    android:id="@+id/btnDelete"
+                    android:id="@+id/btnToggleStatus"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
-                    android:background="@color/white"
-                    android:src="@drawable/ic_delete"/>
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_active"
+                    android:contentDescription="Toggle Status"/>
+
             </LinearLayout>
         </LinearLayout>
 

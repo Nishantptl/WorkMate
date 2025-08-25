@@ -81,14 +81,39 @@ class LoginActivity : AppCompatActivity() {
                         showToast("Welcome Admin!")
                         startActivity(Intent(this, AdminDashboardActivity::class.java))
                     } else {
-                        showToast("Welcome Employee!")
-//                        startActivity(Intent(this, EmployeeDashboardActivity::class.java))
+                        // 👇 Check Firestore for employee status
+                        if (userId != null) {
+                            FirebaseFirestore.getInstance()
+                                .collection("employee")
+                                .document(userId)
+                                .get()
+                                .addOnSuccessListener { document ->
+                                    if (document.exists()) {
+                                        val status = document.getString("status") ?: "inactive"
+                                        if (status == "inactive") {
+                                            showToast("Your account is deactivated. Please contact admin.")
+                                            auth.signOut()
+                                        } else {
+                                            showToast("Welcome Employee!")
+                                            // startActivity(Intent(this, EmployeeDashboardActivity::class.java))
+                                        }
+                                    } else {
+                                        showToast("No employee record found. Contact admin.")
+                                        auth.signOut()
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    showToast("Error: ${e.localizedMessage}")
+                                    auth.signOut()
+                                }
+                        }
                     }
                 } else {
                     showToast("Login failed: ${task.exception?.localizedMessage}")
                 }
             }
     }
+
     private fun showPasswordResetDialog() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Reset Password")

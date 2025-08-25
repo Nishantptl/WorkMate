@@ -1,5 +1,7 @@
 package com.example.EAMS.Adapters
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,14 +13,14 @@ import com.example.EAMS.Model.*
 class EmployeeAdapter(
     private val employeeList: ArrayList<Employee>,
     private val onEdit: (Employee) -> Unit,
-    private val onDelete: (Employee) -> Unit
+    private val onStatusChange: (Employee) -> Unit
 ) : RecyclerView.Adapter<EmployeeAdapter.EmployeeViewHolder>() {
 
     class EmployeeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtEmployeeName)
         val txtEmail: TextView = itemView.findViewById(R.id.txtEmployeeEmail)
         val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
-        val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+        val btnToggleStatus: ImageButton = itemView.findViewById(R.id.btnToggleStatus)
         val txtDepartment: TextView = itemView.findViewById(R.id.txtDepartment)
         val txtJoiningDate: TextView = itemView.findViewById(R.id.txtJoiningDate)
     }
@@ -36,8 +38,15 @@ class EmployeeAdapter(
         holder.txtDepartment.text = employee.department
         holder.txtJoiningDate.text = employee.joiningDate
 
+        // Set status button appearance
+        if (employee.status == "active") {
+            holder.btnToggleStatus.setImageResource(R.drawable.ic_active)
+        } else {
+            holder.btnToggleStatus.setImageResource(R.drawable.ic_inactive)
+        }
+
         holder.btnEdit.setOnClickListener { onEdit(employee) }
-        holder.btnDelete.setOnClickListener { onDelete(employee) }
+        holder.btnToggleStatus.setOnClickListener { onStatusChange(employee) }
     }
 
     override fun getItemCount(): Int = employeeList.size

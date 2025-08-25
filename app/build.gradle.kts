@@ -53,5 +53,6 @@ dependencies {
     implementation("com.google.firebase:firebase-database:22.0.0")
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.4")
     implementation("com.google.android.gms:play-services-base:18.7.2")
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
 
 }

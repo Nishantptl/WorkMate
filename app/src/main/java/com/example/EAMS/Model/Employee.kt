@@ -7,5 +7,6 @@ data class Employee(
     var email: String = "",
     var role: String = "EMPLOYEE",
     var department: String = "",
-    var joiningDate: String = ""
+    var joiningDate: String = "",
+    var status: String? = "active"
 )

@@ -3,15 +3,8 @@ package com.example.EAMS.AdminFragments
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.view.*
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,7 +13,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.example.EAMS.Model.*
 import com.example.EAMS.Adapters.*
 import com.google.firebase.auth.FirebaseAuth
-import org.w3c.dom.Text
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import java.io.IOException
+
 
 class EmployeeFragment : Fragment() {
 
@@ -45,24 +41,26 @@ class EmployeeFragment : Fragment() {
 
         employeeAdapter = EmployeeAdapter(employeeList,
             onEdit = { employee -> showUpdateDialog(employee) },
-            onDelete = { employee -> deleteEmployee(employee.id) })
+            onStatusChange = { employee -> toggleEmployeeStatus(employee) })
 
         recyclerView.adapter = employeeAdapter
-
         btnAddEmployee.setOnClickListener {
             showAddDialog()
         }
 
         fetchEmployees()
-
         return view
     }
 
     private fun fetchEmployees() {
         FirebaseFirestore.getInstance()
             .collection("employee")
-            .get()
-            .addOnSuccessListener { snapshot ->
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.e("Firestore", "Error fetching employees", e)
+                    return@addSnapshotListener
+                }
+
                 if (snapshot != null && !snapshot.isEmpty) {
                     employeeList.clear()
                     for (doc in snapshot.documents) {
@@ -73,15 +71,13 @@ class EmployeeFragment : Fragment() {
                         }
                     }
                     employeeAdapter.notifyDataSetChanged()
-                    Log.d("Firestore", "Fetched employees: ${employeeList.size}")
+                    Log.d("Firestore", "Realtime update: ${employeeList.size} employees")
                 } else {
+                    employeeList.clear()
+                    employeeAdapter.notifyDataSetChanged()
                     Log.d("Firestore", "No employee data found")
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e("Firestore", "Error fetching employees", e)
-            }
-
     }
 
     private fun showAddDialog() {
@@ -137,6 +133,7 @@ class EmployeeFragment : Fragment() {
                             db.collection("employee")
                                 .document(userId)
                                 .set(userMap)
+                            sendEmailToEmployee(name, email, password, department, joiningDate)
                         }
                         .addOnFailureListener { e ->
                             Toast.makeText(requireContext(),
@@ -148,6 +145,72 @@ class EmployeeFragment : Fragment() {
             .show()
     }
 
+    private fun sendEmailToEmployee(
+        name: String,
+        email: String,
+        password: String,
+        department: String,
+        joiningDate: String
+    ) {
+        val url = "https://api.sendgrid.com/v3/mail/send"
+        val apiKey = requireContext().getString(R.string.api_key)
+
+        // Build HTML email body
+        val htmlContent = """
+        <html>
+          <body style='font-family: Arial, sans-serif; color:#333;'>
+            <h2 style='color:#4CAF50;'>Welcome to Employee Attendance Management System 🎉</h2>
+            <p>Hi <b>$name</b>,</p>
+            <p>Your account has been created. Here are your details:</p>
+            <table border='1' cellpadding='6' cellspacing='0'>
+              <tr><td>Email</td><td>$email</td></tr>
+              <tr><td>Password</td><td>$password</td></tr>
+              <tr><td>Department</td><td>$department</td></tr>
+              <tr><td>Joining Date</td><td>$joiningDate</td></tr>
+            </table>
+            <p><b>Please change your password after first login.</b></p>
+            <p>Best regards,<br/>EAMS Admin</p>
+          </body>
+        </html>
+    """.trimIndent()
+
+        val json = org.json.JSONObject().apply {
+            put("personalizations", org.json.JSONArray().put(
+                org.json.JSONObject().apply {
+                    put("to", org.json.JSONArray().put(org.json.JSONObject().put("email", email)))
+                    put("subject", "Welcome to EAMS 🎉")
+                }
+            ))
+            put("from", org.json.JSONObject().put("email", "nishantpatel2810@gmail.com")) // must be VERIFIED in SendGrid
+            put("content", org.json.JSONArray().put(
+                org.json.JSONObject().apply {
+                    put("type", "text/html")
+                    put("value", htmlContent)
+                }
+            ))
+        }
+
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer $apiKey")
+            .addHeader("Content-Type", "application/json")
+            .post(RequestBody.create("application/json".toMediaTypeOrNull(), json.toString()))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("SendGrid", "Error: ${e.message}", e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string()
+                Log.i("SendGrid", "Response: ${response.code} - ${response.message}")
+                Log.i("SendGrid", "Response Body: $responseBody")
+            }
+        })
+    }
+
     private fun showUpdateDialog(employee: Employee) {
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_add_employee, null)
@@ -157,11 +220,13 @@ class EmployeeFragment : Fragment() {
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
         val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
         val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
+        val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
 
         edtName.setText(employee.name)
         edtDepartment.setText(employee.department)
         edtEmail.setText(employee.email)
         txtJoiningDate.setText(employee.joiningDate)
+        edtPassword.visibility = View.GONE
 
         edtJoiningDate.setOnClickListener {
             val calendar = java.util.Calendar.getInstance()
@@ -181,24 +246,36 @@ class EmployeeFragment : Fragment() {
             .setTitle("Update Employee")
             .setView(dialogView)
             .setPositiveButton("Update") { _, _ ->
-                val updates = mapOf(
-                    "name" to edtName.text.toString(),
-                    "department" to edtDepartment.text.toString(),
-                    "email" to edtEmail.text.toString(),
-                    "joiningDate" to txtJoiningDate.text.toString()
-                )
-                db.collection("employee")
-                    .document(employee.id)
-                    .update(updates)
+                val name = edtName.text.toString()
+                val department = edtDepartment.text.toString()
+                val email = edtEmail.text.toString()
+                val joiningDate = txtJoiningDate.text.toString()
+                    val updates = mapOf(
+                        "name" to name,
+                        "department" to department,
+                        "email" to email,
+                        "joiningDate" to joiningDate
+                    )
+                    db.collection("employee")
+                        .document(employee.id)
+                        .update(updates)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
+    private fun toggleEmployeeStatus(employee: Employee) {
+        val newStatus = if (employee.status == "active") "inactive" else "active"
 
-    private fun deleteEmployee(employeeId: String) {
-        db.collection("employee")
-            .document(employeeId)
-            .delete()
+        FirebaseFirestore.getInstance()
+            .collection("employee")
+            .document(employee.id)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Status updated to $newStatus", Toast.LENGTH_SHORT).show()
+                fetchEmployees()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
-
 }
