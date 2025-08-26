@@ -116,6 +116,7 @@ class EmployeeFragment : Fragment() {
                 val password = edtPassword.text.toString()
                 val joiningDate = txtJoiningDate.text.toString()
                 val role = "EMPLOYEE"
+                val status = "active"
 
                 if (email.isNotEmpty() && password.isNotEmpty()) {
                     val auth = FirebaseAuth.getInstance()
@@ -128,7 +129,8 @@ class EmployeeFragment : Fragment() {
                                 "department" to department,
                                 "email" to email,
                                 "role" to role,
-                                "joiningDate" to joiningDate
+                                "joiningDate" to joiningDate,
+                                "status" to status
                             )
                             db.collection("employee")
                                 .document(userId)

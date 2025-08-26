@@ -9,9 +9,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="6dp"
-
+        android:layout_margin="10dp"
         android:background="@drawable/bg_input"
-        android:layout_marginTop="1dp"
         android:elevation="2dp">
 
         <TextView

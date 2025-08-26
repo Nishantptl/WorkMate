@@ -2,13 +2,9 @@ package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import com.example.EAMS.Activities.NewUserActivity
+import android.view.LayoutInflater
+import android.widget.*
+import androidx.appcompat.app.*
 import com.example.EAMS.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -81,7 +77,6 @@ class LoginActivity : AppCompatActivity() {
                         showToast("Welcome Admin!")
                         startActivity(Intent(this, AdminDashboardActivity::class.java))
                     } else {
-                        // 👇 Check Firestore for employee status
                         if (userId != null) {
                             FirebaseFirestore.getInstance()
                                 .collection("employee")
@@ -95,7 +90,7 @@ class LoginActivity : AppCompatActivity() {
                                             auth.signOut()
                                         } else {
                                             showToast("Welcome Employee!")
-                                            // startActivity(Intent(this, EmployeeDashboardActivity::class.java))
+                                             startActivity(Intent(this, EmployeeDashboardActivity::class.java))
                                         }
                                     } else {
                                         showToast("No employee record found. Contact admin.")
@@ -115,44 +110,44 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun showPasswordResetDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Reset Password")
+        val dialogView = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_reset_password, null)
 
-        val input = EditText(this)
-        input.hint = "Enter your registered email"
-        builder.setView(input)
+        val edtEmail = dialogView.findViewById<EditText>(R.id.edtResetEmail)
 
-        builder.setPositiveButton("Reset") { _, _ ->
-            val email = input.text.toString().trim()
-            if (email.isEmpty()) {
-                showToast("Please enter your email")
-            } else {
-                FirebaseFirestore.getInstance()
-                    .collection("employee")
-                    .whereEqualTo("email", email)
-                    .get()
-                    .addOnSuccessListener { documents ->
-                        if (!documents.isEmpty) {
-                            auth.sendPasswordResetEmail(email)
-                                .addOnSuccessListener {
-                                    showToast("Password reset link sent to $email")
-                                }
-                                .addOnFailureListener { e ->
-                                    showToast("Error: ${e.localizedMessage}")
-                                }
-                        } else {
-                            showToast("This email is not registered as an employee")
+        AlertDialog.Builder(this)
+            .setTitle("Reset Password")
+            .setView(dialogView)
+            .setPositiveButton("Reset") { _, _ ->
+                val email = edtEmail.text.toString().trim()
+                if (email.isEmpty()) {
+                    showToast("Please enter your email")
+                } else {
+                    FirebaseFirestore.getInstance()
+                        .collection("employee")
+                        .whereEqualTo("email", email)
+                        .get()
+                        .addOnSuccessListener { documents ->
+                            if (!documents.isEmpty) {
+                                auth.sendPasswordResetEmail(email)
+                                    .addOnSuccessListener {
+                                        showToast("Password reset link sent to $email")
+                                    }
+                                    .addOnFailureListener { e ->
+                                        showToast("Error: ${e.localizedMessage}")
+                                    }
+                            } else {
+                                showToast("This email is not registered as an employee")
+                            }
                         }
-                    }
-                    .addOnFailureListener { e ->
-                        showToast("Error checking employee record: ${e.localizedMessage}")
-                    }
+                        .addOnFailureListener { e ->
+                            showToast("Error checking employee record: ${e.localizedMessage}")
+                        }
+                }
             }
-        }
-        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-        builder.show()
+            .setNegativeButton("Cancel", null)
+            .show()
     }
-
 
     private fun showToast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

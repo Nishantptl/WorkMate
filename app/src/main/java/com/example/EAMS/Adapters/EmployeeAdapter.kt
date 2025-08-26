@@ -1,20 +1,18 @@
 package com.example.EAMS.Adapters
 
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
 import com.example.EAMS.R
 import com.example.EAMS.Model.*
 
 class EmployeeAdapter(
-    private val employeeList: ArrayList<Employee>,
+    private var employeeList: ArrayList<Employee>,
     private val onEdit: (Employee) -> Unit,
     private val onStatusChange: (Employee) -> Unit
 ) : RecyclerView.Adapter<EmployeeAdapter.EmployeeViewHolder>() {
+
+    private var fullList: ArrayList<Employee> = ArrayList(employeeList)
 
     class EmployeeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtEmployeeName)
@@ -38,7 +36,6 @@ class EmployeeAdapter(
         holder.txtDepartment.text = employee.department
         holder.txtJoiningDate.text = employee.joiningDate
 
-        // Set status button appearance
         if (employee.status == "active") {
             holder.btnToggleStatus.setImageResource(R.drawable.ic_active)
         } else {
@@ -50,4 +47,22 @@ class EmployeeAdapter(
     }
 
     override fun getItemCount(): Int = employeeList.size
+
+    fun filter(query: String) {
+        employeeList = if (query.isEmpty()) {
+            ArrayList(fullList)
+        } else {
+            val filtered = fullList.filter {
+                it.name.contains(query, ignoreCase = true)
+            }
+            ArrayList(filtered)
+        }
+        notifyDataSetChanged()
+    }
+
+    fun updateList(newList: ArrayList<Employee>) {
+        fullList = ArrayList(newList)
+        employeeList = ArrayList(newList)
+        notifyDataSetChanged()
+    }
 }
