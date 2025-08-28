@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Solid green color for the background -->
+    <solid android:color="#4CAF50" />
+
+    <!-- Rounded corners to make it look like a tag/badge -->
+    <corners android:radius="16dp" />
+
+</shape>
