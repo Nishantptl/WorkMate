@@ -9,29 +9,45 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class EmployeeDashboardActivity : AppCompatActivity() {
 
-    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var bottomNavigation: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_employee_dashboard)
 
-        bottomNav = findViewById(R.id.employee_bottom_nav)
+        bottomNavigation = findViewById(R.id.employee_bottom_nav)
 
-        loadFragment(DashboardFragment())
-
-        bottomNav.setOnItemSelectedListener { item ->
+        bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> loadFragment(DashboardFragment())
-                R.id.nav_history -> loadFragment(HistoryFragment())
-                R.id.nav_account -> loadFragment(AccountFragment())
+                R.id.nav_home -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.employee_fragment_container, HomeFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_history -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.employee_fragment_container, HistoryFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_account -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.employee_fragment_container, AccountFragment())
+                        .commit()
+                    true
+                }
+                else -> false
             }
-            true
+        }
+
+        // Load default fragment
+        if (savedInstanceState == null) {
+            bottomNavigation.selectedItemId = R.id.nav_home
         }
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.employee_fragment_container, fragment)
-            .commit()
+    fun setSelectedTab(tabId: Int) {
+        bottomNavigation.selectedItemId = tabId
     }
 }

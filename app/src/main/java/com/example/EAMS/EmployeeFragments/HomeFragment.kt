@@ -11,7 +11,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DashboardFragment : Fragment() {
+class HomeFragment : Fragment() {
 
     // --- UI Elements ---
     private lateinit var txtEmployeeName: TextView
@@ -23,6 +23,7 @@ class DashboardFragment : Fragment() {
     private lateinit var txtCheckInTime: TextView
     private lateinit var txtCheckOutTime: TextView
     private lateinit var txtTotalWorkTime: TextView
+    private lateinit var txtOnBreak: TextView
     private lateinit var txtBreak: TextView
 
     // --- Firebase ---
@@ -35,30 +36,36 @@ class DashboardFragment : Fragment() {
     private var checkInTime: Long = 0
     private var breakStartTime: Long = 0
     private var totalBreakTime: Long = 0
+    private var workedTimeWhenPaused: Long = 0
     private var currentAttendanceId: String? = null
     private var wasLate: Boolean = false // To remember if the initial clock-in was late
 
     // --- Attendance Rules Constants ---
     companion object {
-        const val OFFICIAL_START_TIME_HOUR = 9    // 9 AM
-        const val OFFICIAL_START_TIME_MINUTE = 30   // 30 minutes
-        const val FULL_DAY_DURATION_HOURS = 8       // 8 hours for a full day
-        const val HALF_DAY_DURATION_HOURS = 4       // 4 hours for a half day
+        const val OFFICIAL_START_TIME_HOUR = 10    // 9 AM
+        const val OFFICIAL_START_TIME_MINUTE = 30 // 30 minutes
+        const val FULL_DAY_DURATION_HOURS = 8     // 8 hours for a full day
+        const val HALF_DAY_DURATION_HOURS = 4     // 4 hours for a half day
     }
 
     // --- Handler for the main work timer ---
     private val handler = Handler(Looper.getMainLooper())
     private val timerRunnable = object : Runnable {
         override fun run() {
-            if (isClockedIn && !isBreak) {
+            if (isClockedIn) {
                 val elapsed = (System.currentTimeMillis() - checkInTime) - totalBreakTime
-                val seconds = (elapsed / 1000).toInt()
+                val effectiveElapsed = if (isBreak) workedTimeWhenPaused else elapsed
+
+                val seconds = (effectiveElapsed / 1000).toInt()
                 val hours = seconds / 3600
                 val minutes = (seconds % 3600) / 60
                 val secs = seconds % 60
 
                 txtTime.text = String.format("%02d:%02d:%02d", hours, minutes, secs)
-                handler.postDelayed(this, 1000)
+
+                if (!isBreak) {
+                    handler.postDelayed(this, 1000)
+                }
             }
         }
     }
@@ -67,7 +74,7 @@ class DashboardFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_e_dashboard, container, false)
+        val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         // Initialize UI components
         txtEmployeeName = view.findViewById(R.id.txtEmployeeName)
@@ -79,6 +86,7 @@ class DashboardFragment : Fragment() {
         txtCheckInTime = view.findViewById(R.id.txtCheckInTime)
         txtCheckOutTime = view.findViewById(R.id.txtCheckOutTime)
         txtTotalWorkTime = view.findViewById(R.id.txtTotalWorkTime)
+        txtOnBreak = view.findViewById(R.id.txtOnBreak)
         txtBreak = view.findViewById(R.id.txtBreak)
 
         loadEmployeeDetails()
@@ -97,7 +105,6 @@ class DashboardFragment : Fragment() {
     }
 
     // --- Attendance State Management ---
-
     private fun checkTodayAttendance() {
         val userId = auth.currentUser?.uid ?: return
         val today = getTodayDateString()
@@ -116,12 +123,14 @@ class DashboardFragment : Fragment() {
                     val checkOutTimestamp = document.getLong("checkOutTime")
                     val totalBreakDuration = document.getLong("totalBreakTime") ?: 0
                     val status = document.getString("status")
+                    val isOnBreak = document.getBoolean("isOnBreak") ?: false
+                    val lastUpdated = document.getLong("lastUpdated") ?: 0
+                    val breakStart = document.getLong("breakStartTime") ?: 0
 
-                    // Check if the initial clock-in was late
                     wasLate = status == "Late"
 
                     if (checkInTimestamp != null && checkOutTimestamp == null) {
-                        restoreClockInState(checkInTimestamp, totalBreakDuration)
+                        restoreClockInState(checkInTimestamp, totalBreakDuration, isOnBreak, breakStart, lastUpdated)
                     } else if (checkInTimestamp != null && checkOutTimestamp != null) {
                         showCompletedWorkState(checkInTimestamp, checkOutTimestamp, totalBreakDuration)
                     }
@@ -135,23 +144,43 @@ class DashboardFragment : Fragment() {
             }
     }
 
-    private fun restoreClockInState(checkInTimestamp: Long, totalBreakDuration: Long) {
+    private fun restoreClockInState(
+        checkInTimestamp: Long,
+        totalBreakDuration: Long,
+        isOnBreak: Boolean,
+        breakStart: Long,
+        lastUpdated: Long
+    ) {
         isClockedIn = true
         checkInTime = checkInTimestamp
         totalBreakTime = totalBreakDuration
-        isBreak = false
+        this.isBreak = isOnBreak
 
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-
         txtCheck.text = "Check Out"
         txtCheckInTime.visibility = View.VISIBLE
         txtCheckInTime.text = "Checked in at " + timeFormat.format(Date(checkInTimestamp))
         txtBreak.visibility = View.VISIBLE
-        txtBreak.text = "Break"
         txtCheckOutTime.visibility = View.GONE
         txtTotalWorkTime.visibility = View.GONE
 
-        handler.post(timerRunnable)
+        if (isOnBreak) {
+            txtBreak.text = "Resume"
+            breakStartTime = breakStart.takeIf { it > 0 } ?: lastUpdated
+
+            workedTimeWhenPaused = (breakStartTime - checkInTime) - totalBreakTime
+
+            val seconds = (workedTimeWhenPaused / 1000).toInt().coerceAtLeast(0)
+            val hours = seconds / 3600
+            val minutes = (seconds % 3600) / 60
+            val secs = seconds % 60
+            txtTime.text = String.format("%02d:%02d:%02d", hours, minutes, secs)
+
+            handler.removeCallbacks(timerRunnable)
+        } else {
+            txtBreak.text = "Break"
+            handler.post(timerRunnable)
+        }
     }
 
     private fun showCompletedWorkState(checkInTimestamp: Long, checkOutTimestamp: Long, totalBreakDuration: Long) {
@@ -173,7 +202,6 @@ class DashboardFragment : Fragment() {
         val seconds = ((workDuration / 1000) % 60).toInt()
 
         txtTotalWorkTime.visibility = View.VISIBLE
-        // You can also display the final status here if you add another TextView
         txtTotalWorkTime.text = "Total working hours " + String.format("%02d:%02d:%02d", hours, minutes, seconds)
         txtTime.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
         txtBreak.visibility = View.GONE
@@ -184,6 +212,7 @@ class DashboardFragment : Fragment() {
         isBreak = false
         checkInTime = 0
         totalBreakTime = 0
+        workedTimeWhenPaused = 0
         currentAttendanceId = null
         wasLate = false
 
@@ -199,7 +228,6 @@ class DashboardFragment : Fragment() {
     }
 
     // --- UI and Data Loading ---
-
     private fun loadEmployeeDetails() {
         val userId = auth.currentUser?.uid
         if (userId != null) {
@@ -232,13 +260,15 @@ class DashboardFragment : Fragment() {
     }
 
     // --- Main Logic: Clock-In/Out and Breaks ---
-
     @SuppressLint("SetTextI18n")
     private fun handleBreakResume() {
         if (!isBreak) {
             isBreak = true
             breakStartTime = System.currentTimeMillis()
+            workedTimeWhenPaused = (breakStartTime - checkInTime) - totalBreakTime
+
             handler.removeCallbacks(timerRunnable)
+            txtOnBreak.visibility = View.VISIBLE
             txtBreak.text = "Resume"
             Toast.makeText(requireContext(), "Break Started", Toast.LENGTH_SHORT).show()
             updateBreakStatus(true)
@@ -246,6 +276,7 @@ class DashboardFragment : Fragment() {
             isBreak = false
             totalBreakTime += System.currentTimeMillis() - breakStartTime
             handler.post(timerRunnable)
+            txtOnBreak.visibility = View.GONE
             txtBreak.text = "Break"
             Toast.makeText(requireContext(), "Resumed", Toast.LENGTH_SHORT).show()
             updateBreakStatus(false)
@@ -259,13 +290,13 @@ class DashboardFragment : Fragment() {
         val userId = auth.currentUser?.uid ?: return
 
         if (!isClockedIn) {
-            // --- ✅ Clock In ---
+            // --- Clock In ---
             isClockedIn = true
             checkInTime = currentTime
             totalBreakTime = 0
             isBreak = false
+            workedTimeWhenPaused = 0
 
-            // Update UI
             txtCheck.text = "Check Out"
             txtCheckInTime.visibility = View.VISIBLE
             txtBreak.visibility = View.VISIBLE
@@ -276,20 +307,18 @@ class DashboardFragment : Fragment() {
             txtTime.text = "00:00:00"
             handler.post(timerRunnable)
 
-            // Save to Firebase
             saveCheckInToFirebase(userId, currentTime)
             Toast.makeText(requireContext(), "Clocked In", Toast.LENGTH_SHORT).show()
         } else {
-            // --- ✅ Clock Out ---
+            // --- Clock Out ---
             if (isBreak) {
-                handleBreakResume() // End break before clocking out
+                handleBreakResume()
             }
 
             isClockedIn = false
             val checkOutTime = currentTime
             handler.removeCallbacks(timerRunnable)
 
-            // Update UI
             txtCheck.text = "Work Complete"
             btnClockIn.isEnabled = false
             btnClockIn.alpha = 0.5f
@@ -297,7 +326,6 @@ class DashboardFragment : Fragment() {
             txtCheckOutTime.text = "Checked out at " + timeFormat.format(Date(checkOutTime))
             txtBreak.visibility = View.GONE
 
-            // Calculate work duration
             val diff = (checkOutTime - checkInTime) - totalBreakTime
             val hours = (diff / (1000 * 60 * 60)).toInt()
             val minutes = ((diff / (1000 * 60)) % 60).toInt()
@@ -306,20 +334,19 @@ class DashboardFragment : Fragment() {
             txtTotalWorkTime.visibility = View.VISIBLE
             txtTotalWorkTime.text = "Total working hours " + String.format("%02d:%02d:%02d", hours, minutes, seconds)
 
-            // Save to Firebase
             saveCheckOutToFirebase(checkOutTime, diff)
             Toast.makeText(requireContext(), "Clocked Out", Toast.LENGTH_SHORT).show()
         }
     }
 
     // --- Firebase Data Handling ---
-
     private fun updateBreakStatus(isOnBreak: Boolean) {
         currentAttendanceId?.let { attendanceId ->
             val updates = hashMapOf<String, Any>(
                 "isOnBreak" to isOnBreak,
                 "totalBreakTime" to totalBreakTime,
-                "lastUpdated" to System.currentTimeMillis()
+                "lastUpdated" to System.currentTimeMillis(),
+                "breakStartTime" to if (isOnBreak) breakStartTime else 0L
             )
             firestore.collection("attendance")
                 .document(attendanceId)
@@ -330,9 +357,6 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    /**
-     * Determines the initial status (Late or Present) on clock-in.
-     */
     private fun getInitialStatus(checkInTime: Long): String {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, OFFICIAL_START_TIME_HOUR)
@@ -340,20 +364,16 @@ class DashboardFragment : Fragment() {
         calendar.set(Calendar.SECOND, 0)
         val officialStartTime = calendar.timeInMillis
 
-        wasLate = checkInTime > officialStartTime // Set the flag for later use
+        wasLate = checkInTime > officialStartTime
         return if (wasLate) "Late" else "Present"
     }
 
-    /**
-     * Determines the final status based on total work duration on clock-out.
-     */
     private fun getFinalStatus(totalWorkDuration: Long): String {
         val totalWorkHours = totalWorkDuration / (1000 * 60 * 60)
-
         return when {
             totalWorkHours >= FULL_DAY_DURATION_HOURS -> if (wasLate) "Late" else "Present"
             totalWorkHours >= HALF_DAY_DURATION_HOURS -> "Half Day"
-            else -> "Short Leave" // A status for less than half-day
+            else -> "Absent"
         }
     }
 
@@ -367,8 +387,9 @@ class DashboardFragment : Fragment() {
             "checkOutTime" to null,
             "totalBreakTime" to 0L,
             "totalWorkDuration" to null,
-            "status" to initialStatus, // NEW: Added status field
+            "status" to initialStatus,
             "isOnBreak" to false,
+            "breakStartTime" to 0L,
             "createdAt" to System.currentTimeMillis(),
             "lastUpdated" to System.currentTimeMillis()
         )
@@ -391,8 +412,9 @@ class DashboardFragment : Fragment() {
                 "checkOutTime" to checkOutTime,
                 "totalWorkDuration" to totalWorkDuration,
                 "totalBreakTime" to totalBreakTime,
-                "status" to finalStatus, // NEW: Update status on clock-out
+                "status" to finalStatus,
                 "isOnBreak" to false,
+                "breakStartTime" to 0L,
                 "lastUpdated" to System.currentTimeMillis()
             )
 

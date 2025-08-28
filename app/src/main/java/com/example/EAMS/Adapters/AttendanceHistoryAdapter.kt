@@ -47,7 +47,7 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
             "Present" -> holder.status.setBackgroundColor(Color.parseColor("#4CAF50")) // Green
             "Late" -> holder.status.setBackgroundColor(Color.parseColor("#FFC107")) // Amber
             "Half Day" -> holder.status.setBackgroundColor(Color.parseColor("#2196F3")) // Blue
-            "Short Leave" -> holder.status.setBackgroundColor(Color.parseColor("#FF5722")) // Deep Orange
+            "Absent" -> holder.status.setBackgroundColor(Color.parseColor("#FF5722")) // Deep Orange
             else -> holder.status.setBackgroundColor(Color.GRAY)
         }
 

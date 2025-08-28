@@ -3,10 +3,8 @@ package com.example.EAMS.EmployeeFragments
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Toast
+import android.view.*
+import android.widget.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.EAMS.R
@@ -19,6 +17,7 @@ import com.google.firebase.firestore.Query
 class HistoryFragment : Fragment() {
 
     private lateinit var historyRecyclerView: RecyclerView
+    private lateinit var txtNoHistory: TextView
     private lateinit var historyAdapter: AttendanceHistoryAdapter
     private val historyList = mutableListOf<AttendanceRecord>()
 
@@ -33,11 +32,12 @@ class HistoryFragment : Fragment() {
 
         // Initialize RecyclerView
         historyRecyclerView = view.findViewById(R.id.historyRecyclerView)
+        txtNoHistory = view.findViewById(R.id.txtNoHistory)
+
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         historyAdapter = AttendanceHistoryAdapter(historyList)
         historyRecyclerView.adapter = historyAdapter
 
-        // Load data from Firestore
         loadAttendanceHistory()
 
         return view
@@ -48,11 +48,16 @@ class HistoryFragment : Fragment() {
 
         firestore.collection("attendance")
             .whereEqualTo("employeeId", userId)
-            .orderBy("date", Query.Direction.DESCENDING) // Show most recent first
+            .orderBy("date", Query.Direction.DESCENDING)
             .get()
             .addOnSuccessListener { documents ->
+
                 if (documents.isEmpty) {
-                    Toast.makeText(context, "No attendance history found.", Toast.LENGTH_SHORT).show()
+                    historyList.clear()
+                    historyAdapter.notifyDataSetChanged()
+
+                    historyRecyclerView.visibility = View.GONE
+                    txtNoHistory.visibility = View.VISIBLE
                     return@addOnSuccessListener
                 }
 
@@ -67,7 +72,10 @@ class HistoryFragment : Fragment() {
                     )
                     historyList.add(record)
                 }
-                historyAdapter.notifyDataSetChanged() // Refresh the list
+                historyAdapter.notifyDataSetChanged()
+
+                historyRecyclerView.visibility = View.VISIBLE
+                txtNoHistory.visibility = View.GONE
             }
             .addOnFailureListener { e ->
                 Toast.makeText(context, "Error loading history: ${e.message}", Toast.LENGTH_LONG).show()
