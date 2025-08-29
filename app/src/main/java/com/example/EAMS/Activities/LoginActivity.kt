@@ -25,19 +25,8 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         auth = FirebaseAuth.getInstance()
+        auth.signOut()
         role = intent.getStringExtra("ROLE") ?: "EMPLOYEE"
-
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            if (role == "ADMIN") {
-                startActivity(Intent(this, AdminDashboardActivity::class.java))
-            } else {
-                startActivity(Intent(this, EmployeeDashboardActivity::class.java))
-            }
-            finish()
-            return
-        }
-
 
         edtEmail = findViewById(R.id.edtEmail)
         edtPassword = findViewById(R.id.edtPassword)

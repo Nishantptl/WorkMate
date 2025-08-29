@@ -29,6 +29,7 @@ class HomeFragment : Fragment() {
     // --- Firebase ---
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+    private var employeeName: String? = null
 
     // --- State variables for time tracking ---
     private var isClockedIn = false
@@ -102,6 +103,34 @@ class HomeFragment : Fragment() {
         }
 
         return view
+    }
+
+    // --- UI and Data Loading ---
+    private fun loadEmployeeDetails() {
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            firestore.collection("employee")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        val name = document.getString("name") ?: "Employee"
+                        val department = document.getString("department") ?: "Unknown Dept"
+                        employeeName = name
+
+                        txtEmployeeName.text = "Hi, $name"
+                        txtEmployeeDepartment.text = department
+                    }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    private fun setDate() {
+        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+        txtDate.text = sdf.format(Date())
     }
 
     // --- Attendance State Management ---
@@ -225,33 +254,6 @@ class HomeFragment : Fragment() {
 
         btnClockIn.isEnabled = true
         btnClockIn.alpha = 1.0f
-    }
-
-    // --- UI and Data Loading ---
-    private fun loadEmployeeDetails() {
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
-            firestore.collection("employee")
-                .document(userId)
-                .get()
-                .addOnSuccessListener { document ->
-                    if (document.exists()) {
-                        val name = document.getString("name") ?: "Employee"
-                        val department = document.getString("department") ?: "Unknown Dept"
-
-                        txtEmployeeName.text = "Hi, $name"
-                        txtEmployeeDepartment.text = department
-                    }
-                }
-                .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
-                }
-        }
-    }
-
-    private fun setDate() {
-        val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-        txtDate.text = sdf.format(Date())
     }
 
     private fun getTodayDateString(): String {
@@ -382,6 +384,7 @@ class HomeFragment : Fragment() {
 
         val attendanceData = hashMapOf(
             "employeeId" to userId,
+            "employeeName" to employeeName,
             "date" to getTodayDateString(),
             "checkInTime" to checkInTime,
             "checkOutTime" to null,

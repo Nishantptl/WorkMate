@@ -21,7 +21,7 @@ import java.io.IOException
 class EmployeeFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var employeeAdapter: EmployeeAdapter
+    private lateinit var employeeAdapter: AddEmployeeAdapter
     private lateinit var employeeList: ArrayList<Employee>
     private lateinit var db: FirebaseFirestore
     private lateinit var btnAddEmployee: ImageButton
@@ -39,9 +39,7 @@ class EmployeeFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         employeeList = arrayListOf()
 
-        employeeAdapter = EmployeeAdapter(employeeList,
-            onEdit = { employee -> showUpdateDialog(employee) },
-            onStatusChange = { employee -> toggleEmployeeStatus(employee) })
+        employeeAdapter = AddEmployeeAdapter(employeeList)
 
         recyclerView.adapter = employeeAdapter
         btnAddEmployee.setOnClickListener {
