@@ -4,4 +4,8 @@
     <color name="white">#FFFFFFFF</color>
     <color name="colorAccent">#4CAF50</color>
     <color name="colorPrimaryDark">#333333</color>
+    <color name="Present">#4CAF50</color>
+    <color name="Absent">#FF5722</color>
+    <color name="HalfDay">#2196F3</color>
+    <color name="Late">#FFC107</color>
 </resources>

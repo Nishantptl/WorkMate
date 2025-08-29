@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.EAMS.R
 import com.example.EAMS.Model.AttendanceRecord
@@ -41,15 +42,23 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
         val parsedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(record.date)
         holder.date.text = if (parsedDate != null) dateFormat.format(parsedDate) else record.date
 
-        // Set Status and its background color
         holder.status.text = record.status
         when (record.status) {
-            "Present" -> holder.status.setBackgroundColor(Color.parseColor("#4CAF50")) // Green
-            "Late" -> holder.status.setBackgroundColor(Color.parseColor("#FFC107")) // Amber
-            "Half Day" -> holder.status.setBackgroundColor(Color.parseColor("#2196F3")) // Blue
-            "Absent" -> holder.status.setBackgroundColor(Color.parseColor("#FF5722")) // Deep Orange
+            "Present" -> holder.status.setBackgroundColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.Present)
+            )
+            "Late" -> holder.status.setBackgroundColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.Late)
+            )
+            "Half Day" ->holder.status.setBackgroundColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.HalfDay)
+            )
+            "Absent" -> holder.status.setBackgroundColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.Absent)
+            )
             else -> holder.status.setBackgroundColor(Color.GRAY)
         }
+
 
         // Set Check-in and Check-out times
         holder.checkIn.text = "In: ${timeFormat.format(Date(record.checkInTime))}"
