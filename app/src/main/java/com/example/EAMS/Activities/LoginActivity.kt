@@ -4,7 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.*
-import androidx.appcompat.app.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import com.example.EAMS.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -68,47 +69,69 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun loginUser(email: String, password: String) {
+        // Start Progress Dialog here if you have one
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val user = auth.currentUser
                     val userId = user?.uid
 
+                    if (userId == null) {
+                        showToast("Authentication failed. Please try again.")
+                        return@addOnCompleteListener
+                    }
+
+                    val db = FirebaseFirestore.getInstance()
+
                     if (role == "ADMIN") {
-                        showToast("Welcome Admin!")
-                        startActivity(Intent(this, AdminDashboardActivity::class.java))
-                    } else {
-                        if (userId != null) {
-                            FirebaseFirestore.getInstance()
-                                .collection("employee")
-                                .document(userId)
-                                .get()
-                                .addOnSuccessListener { document ->
-                                    if (document.exists()) {
-                                        val status = document.getString("status") ?: "inactive"
-                                        if (status == "inactive") {
-                                            showToast("Your account is deactivated. Please contact admin.")
-                                            auth.signOut()
-                                        } else {
-                                            showToast("Welcome Employee!")
-                                             startActivity(Intent(this, EmployeeDashboardActivity::class.java))
-                                        }
-                                    } else {
-                                        showToast("No employee record found. Contact admin.")
-                                        auth.signOut()
-                                    }
-                                }
-                                .addOnFailureListener { e ->
-                                    showToast("Error: ${e.localizedMessage}")
+
+                        db.collection("admin").document(userId).get()
+                            .addOnSuccessListener { document ->
+                                if (document.exists()) {
+                                    showToast("Welcome Admin!")
+                                    startActivity(Intent(this, AdminDashboardActivity::class.java))
+                                    finish()
+                                } else {
+                                    // User is authenticated but not in the employee collection
+                                    showToast("Admin record not found. Access denied.")
                                     auth.signOut()
                                 }
-                        }
+                            }
+                            .addOnFailureListener { e ->
+                                showToast("Error verifying admin: ${e.localizedMessage}")
+                                auth.signOut()
+                            }
+                        // ▲▲▲ MODIFICATION END ▲▲▲
+                    } else { // Employee Logic
+                        db.collection("employee").document(userId).get()
+                            .addOnSuccessListener { document ->
+                                if (document.exists()) {
+                                    val status = document.getString("status") ?: "inactive"
+                                    if (status == "inactive") {
+                                        showToast("Your account is deactivated. Please contact admin.")
+                                        auth.signOut()
+                                    } else {
+                                        showToast("Welcome Employee!")
+                                        startActivity(Intent(this, EmployeeDashboardActivity::class.java))
+                                        finish() // Close LoginActivity
+                                    }
+                                } else {
+                                    showToast("No employee record found. Contact admin.")
+                                    auth.signOut()
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                showToast("Error: ${e.localizedMessage}")
+                                auth.signOut()
+                            }
                     }
                 } else {
+                    // Stop Progress Dialog here
                     showToast("Login failed: ${task.exception?.localizedMessage}")
                 }
             }
     }
+
 
     private fun showPasswordResetDialog() {
         val dialogView = LayoutInflater.from(this)

@@ -1,5 +1,6 @@
 package com.example.EAMS.Adapters
 
+import android.annotation.SuppressLint
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -30,6 +31,7 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
         return HistoryViewHolder(view)
     }
 
+    @SuppressLint("SetTextI18n", "DefaultLocale")
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
         val record = historyList[position]
 

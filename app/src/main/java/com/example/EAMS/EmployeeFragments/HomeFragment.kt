@@ -156,6 +156,18 @@ class HomeFragment : Fragment() {
                         wasLate = attendance.status == "Late"
 
                         when {
+                            // Case 1: Already Absent → disable button
+                            attendance.status == "Absent" -> {
+                                txtCheck.text = "Absent"
+                                btnClockIn.isEnabled = false
+                                btnClockIn.alpha = 0.5f
+                                txtCheckInTime.visibility = View.VISIBLE
+                                txtCheckInTime.text = "Marked absent today"
+                                txtBreak.visibility = View.GONE
+                                txtTime.text = "00:00:00"
+                            }
+
+                            // Case 2: Checked in but not yet out
                             attendance.checkInTime > 0 && attendance.checkOutTime == null -> {
                                 restoreClockInState(
                                     checkInTimestamp = attendance.checkInTime,
@@ -165,6 +177,8 @@ class HomeFragment : Fragment() {
                                     lastUpdated = attendance.lastUpdated
                                 )
                             }
+
+                            // Case 3: Work already completed
                             attendance.checkInTime > 0 && attendance.checkOutTime != null -> {
                                 showCompletedWorkState(
                                     checkInTimestamp = attendance.checkInTime,
@@ -309,7 +323,53 @@ class HomeFragment : Fragment() {
         val userId = auth.currentUser?.uid ?: return
 
         if (!isClockedIn) {
-            // --- Clock In ---
+            // --- Check cutoff time (11:00 AM) ---
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.HOUR_OF_DAY, 11)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            val cutoffTime = calendar.timeInMillis
+
+            if (currentTime > cutoffTime) {
+                // Past 11:00 AM → Mark Absent, disable check-in
+                txtCheck.text = "Absent"
+                btnClockIn.isEnabled = false
+                btnClockIn.alpha = 0.5f
+                txtCheckInTime.visibility = View.VISIBLE
+                txtCheckInTime.text = "Attendance closed at " + timeFormat.format(Date(currentTime))
+                txtBreak.visibility = View.GONE
+                txtTime.text = "00:00:00"
+
+                // Save directly as Absent record
+                val attendanceRecord = AttendanceRecord(
+                    employeeId = userId,
+                    employeeName = employeeName ?: "",
+                    date = getTodayDateString(),
+                    status = "Absent",
+                    checkInTime = 0L,
+                    checkOutTime = null,
+                    totalWorkDuration = null,
+                    totalBreakTime = 0L,
+                    isOnBreak = false,
+                    breakStartTime = null,
+                    createdAt = System.currentTimeMillis(),
+                    lastUpdated = System.currentTimeMillis()
+                )
+
+                firestore.collection("attendance")
+                    .add(attendanceRecord)
+                    .addOnSuccessListener { documentReference ->
+                        currentAttendanceId = documentReference.id
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(requireContext(), "Failed to mark Absent", Toast.LENGTH_SHORT).show()
+                    }
+
+                Toast.makeText(requireContext(), "Check-in closed after 11:00 AM", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // --- Normal Clock In (before 11 AM) ---
             isClockedIn = true
             checkInTime = currentTime
             totalBreakTime = 0
@@ -357,6 +417,7 @@ class HomeFragment : Fragment() {
             Toast.makeText(requireContext(), "Clocked Out", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     // --- Firebase Data Handling ---
     private fun updateBreakStatus(isOnBreak: Boolean) {
