@@ -94,10 +94,8 @@ class ViewEmployeeActivity : AppCompatActivity() {
                 for (document in result) {
                     val record = document.toObject(AttendanceRecord::class.java)
 
-                    // ✅ Skip today's record
-                    if (record.date != today) {
                         attendanceList.add(record)
-                    }
+
                 }
                 attendanceAdapter.notifyDataSetChanged()
             }

@@ -62,7 +62,7 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
 
         // Set Check-in and Check-out times
         holder.checkIn.text = "In: ${timeFormat.format(Date(record.checkInTime))}"
-        holder.checkOut.text = if (record.checkOutTime > 0) {
+        holder.checkOut.text = if (record.checkOutTime != null) {
             "Out: ${timeFormat.format(Date(record.checkOutTime))}"
         } else {
             "Out: --:--"
@@ -70,7 +70,7 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
 
         // Set Total Work Duration
         val duration = record.totalWorkDuration
-        if (duration > 0) {
+        if (duration != null) {
             val hours = TimeUnit.MILLISECONDS.toHours(duration)
             val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
             holder.totalHours.text = String.format("Total: %02dh %02dm", hours, minutes)

@@ -6,6 +6,7 @@ import android.view.*
 import android.widget.*
 import androidx.fragment.app.Fragment
 import com.example.EAMS.R
+import com.example.EAMS.Model.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
@@ -43,7 +44,7 @@ class HomeFragment : Fragment() {
 
     // --- Attendance Rules Constants ---
     companion object {
-        const val OFFICIAL_START_TIME_HOUR = 10    // 9 AM
+        const val OFFICIAL_START_TIME_HOUR = 10    //  10 AM
         const val OFFICIAL_START_TIME_MINUTE = 30 // 30 minutes
         const val FULL_DAY_DURATION_HOURS = 8     // 8 hours for a full day
         const val HALF_DAY_DURATION_HOURS = 4     // 4 hours for a half day
@@ -64,7 +65,7 @@ class HomeFragment : Fragment() {
 
                 txtTime.text = String.format("%02d:%02d:%02d", hours, minutes, secs)
 
-                if (!isBreak) {
+                if (!isBreak)    {
                     handler.postDelayed(this, 1000)
                 }
             }
@@ -148,20 +149,35 @@ class HomeFragment : Fragment() {
                     val document = documents.documents[0]
                     currentAttendanceId = document.id
 
-                    val checkInTimestamp = document.getLong("checkInTime")
-                    val checkOutTimestamp = document.getLong("checkOutTime")
-                    val totalBreakDuration = document.getLong("totalBreakTime") ?: 0
-                    val status = document.getString("status")
-                    val isOnBreak = document.getBoolean("isOnBreak") ?: false
-                    val lastUpdated = document.getLong("lastUpdated") ?: 0
-                    val breakStart = document.getLong("breakStartTime") ?: 0
+                    // Convert directly into data class
+                    val attendance = document.toObject(AttendanceRecord::class.java)
 
-                    wasLate = status == "Late"
+                    if (attendance != null) {
+                        wasLate = attendance.status == "Late"
 
-                    if (checkInTimestamp != null && checkOutTimestamp == null) {
-                        restoreClockInState(checkInTimestamp, totalBreakDuration, isOnBreak, breakStart, lastUpdated)
-                    } else if (checkInTimestamp != null && checkOutTimestamp != null) {
-                        showCompletedWorkState(checkInTimestamp, checkOutTimestamp, totalBreakDuration)
+                        when {
+                            attendance.checkInTime > 0 && attendance.checkOutTime == null -> {
+                                restoreClockInState(
+                                    checkInTimestamp = attendance.checkInTime,
+                                    totalBreakDuration = attendance.totalBreakTime,
+                                    isOnBreak = attendance.isOnBreak,
+                                    breakStart = attendance.breakStartTime ?: 0L,
+                                    lastUpdated = attendance.lastUpdated
+                                )
+                            }
+                            attendance.checkInTime > 0 && attendance.checkOutTime != null -> {
+                                showCompletedWorkState(
+                                    checkInTimestamp = attendance.checkInTime,
+                                    checkOutTimestamp = attendance.checkOutTime,
+                                    totalBreakDuration = attendance.totalBreakTime
+                                )
+                            }
+                            else -> {
+                                resetUI()
+                            }
+                        }
+                    } else {
+                        resetUI()
                     }
                 } else {
                     resetUI()
@@ -172,6 +188,7 @@ class HomeFragment : Fragment() {
                 Toast.makeText(requireContext(), "Failed to load attendance data", Toast.LENGTH_SHORT).show()
             }
     }
+
 
     private fun restoreClockInState(
         checkInTimestamp: Long,
@@ -344,20 +361,33 @@ class HomeFragment : Fragment() {
     // --- Firebase Data Handling ---
     private fun updateBreakStatus(isOnBreak: Boolean) {
         currentAttendanceId?.let { attendanceId ->
-            val updates = hashMapOf<String, Any>(
-                "isOnBreak" to isOnBreak,
-                "totalBreakTime" to totalBreakTime,
-                "lastUpdated" to System.currentTimeMillis(),
-                "breakStartTime" to if (isOnBreak) breakStartTime else 0L
-            )
             firestore.collection("attendance")
                 .document(attendanceId)
-                .update(updates)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    val record = snapshot.toObject(AttendanceRecord::class.java)
+                    if (record != null) {
+                        val updatedRecord = record.copy(
+                            isOnBreak = isOnBreak,
+                            totalBreakTime = totalBreakTime,
+                            lastUpdated = System.currentTimeMillis(),
+                            breakStartTime = if (isOnBreak) breakStartTime else null
+                        )
+
+                        firestore.collection("attendance")
+                            .document(attendanceId)
+                            .set(updatedRecord) // overwrite with updated data class
+                            .addOnFailureListener {
+                                Toast.makeText(requireContext(), "Failed to update break status", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                }
                 .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Failed to update break status", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to fetch record for update", Toast.LENGTH_SHORT).show()
                 }
         }
     }
+
 
     private fun getInitialStatus(checkInTime: Long): String {
         val calendar = Calendar.getInstance()
@@ -382,23 +412,23 @@ class HomeFragment : Fragment() {
     private fun saveCheckInToFirebase(userId: String, checkInTime: Long) {
         val initialStatus = getInitialStatus(checkInTime)
 
-        val attendanceData = hashMapOf(
-            "employeeId" to userId,
-            "employeeName" to employeeName,
-            "date" to getTodayDateString(),
-            "checkInTime" to checkInTime,
-            "checkOutTime" to null,
-            "totalBreakTime" to 0L,
-            "totalWorkDuration" to null,
-            "status" to initialStatus,
-            "isOnBreak" to false,
-            "breakStartTime" to 0L,
-            "createdAt" to System.currentTimeMillis(),
-            "lastUpdated" to System.currentTimeMillis()
+        val attendanceRecord = AttendanceRecord(
+            employeeId = userId,
+            employeeName = employeeName ?: "",
+            date = getTodayDateString(),
+            status = initialStatus,
+            checkInTime = checkInTime,
+            checkOutTime = null,                // not set yet
+            totalWorkDuration = null,           // not set yet
+            totalBreakTime = 0L,
+            isOnBreak = false,
+            breakStartTime = null,              // not set yet
+            createdAt = System.currentTimeMillis(),
+            lastUpdated = System.currentTimeMillis()
         )
 
         firestore.collection("attendance")
-            .add(attendanceData)
+            .add(attendanceRecord)
             .addOnSuccessListener { documentReference ->
                 currentAttendanceId = documentReference.id
             }
@@ -409,26 +439,38 @@ class HomeFragment : Fragment() {
 
     private fun saveCheckOutToFirebase(checkOutTime: Long, totalWorkDuration: Long) {
         currentAttendanceId?.let { attendanceId ->
-            val finalStatus = getFinalStatus(totalWorkDuration)
-
-            val updates = hashMapOf<String, Any>(
-                "checkOutTime" to checkOutTime,
-                "totalWorkDuration" to totalWorkDuration,
-                "totalBreakTime" to totalBreakTime,
-                "status" to finalStatus,
-                "isOnBreak" to false,
-                "breakStartTime" to 0L,
-                "lastUpdated" to System.currentTimeMillis()
-            )
-
             firestore.collection("attendance")
                 .document(attendanceId)
-                .update(updates)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    val record = snapshot.toObject(AttendanceRecord::class.java)
+                    if (record != null) {
+                        val finalStatus = getFinalStatus(totalWorkDuration)
+
+                        val updatedRecord = record.copy(
+                            checkOutTime = checkOutTime,
+                            totalWorkDuration = totalWorkDuration,
+                            totalBreakTime = totalBreakTime,
+                            status = finalStatus,
+                            isOnBreak = false,
+                            breakStartTime = null, // clear break start
+                            lastUpdated = System.currentTimeMillis()
+                        )
+
+                        firestore.collection("attendance")
+                            .document(attendanceId)
+                            .set(updatedRecord)
+                            .addOnFailureListener {
+                                Toast.makeText(requireContext(), "Failed to save check-out data", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                }
                 .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Failed to save check-out data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to fetch record for checkout", Toast.LENGTH_SHORT).show()
                 }
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

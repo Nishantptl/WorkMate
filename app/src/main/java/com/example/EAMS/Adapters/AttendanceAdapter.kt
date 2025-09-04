@@ -1,5 +1,6 @@
 package com.example.EAMS.Adapters
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,14 +29,20 @@ class AttendanceAdapter(
         return AttendanceViewHolder(view)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: AttendanceViewHolder, position: Int) {
         val record = attendanceList[position]
 
         holder.txtDate.text = "Date: ${record.date}"
         holder.txtStatus.text = "Status: ${record.status}"
         holder.txtCheckIn.text = "Check-in: ${formatTime(record.checkInTime)}"
-        holder.txtCheckOut.text = "Check-out: ${formatTime(record.checkOutTime)}"
-        holder.txtDuration.text = "Work Duration: ${formatDuration(record.totalWorkDuration)}"
+        holder.txtCheckOut.text = ("Check-out:" + record.checkOutTime?.let {
+            formatTime(it)
+        })
+
+        holder.txtDuration.text = ("Work Duration:" + record.totalWorkDuration?.let {
+            formatTime(it)
+        })
     }
 
     override fun getItemCount(): Int = attendanceList.size
