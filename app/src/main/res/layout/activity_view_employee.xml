@@ -89,19 +89,26 @@
         android:orientation="horizontal"
         android:padding="3dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Attendance History"
-        android:textSize="18sp"
-        android:layout_gravity="center"
-        android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Attendance History"
+            android:textSize="18sp"
+            android:layout_gravity="center"
+            android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/btnDownload"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_download"
+            android:layout_gravity="end"/>
+
+        <ImageButton
+            android:id="@+id/btnFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_filter"
             android:layout_gravity="end"/>
 
     </LinearLayout>

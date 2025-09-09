@@ -2,6 +2,7 @@ package com.example.EAMS.Activities
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import com.example.EAMS.R
 import com.example.EAMS.Adapters.AttendanceAdapter
@@ -24,6 +25,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
     private lateinit var txtJoiningDate: TextView
     private lateinit var txtEmail: TextView
     private lateinit var btnDownload: ImageButton
+    private lateinit var btnFilter : ImageButton
     private lateinit var recyclerAttendance: RecyclerView
     private lateinit var attendanceAdapter: AttendanceAdapter
     private val attendanceList = mutableListOf<AttendanceRecord>()
@@ -40,6 +42,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
         txtJoiningDate = findViewById(R.id.txtEmployeeJoiningDate)
         txtEmail = findViewById(R.id.txtEmployeeEmail)
         btnDownload = findViewById(R.id.btnDownload)
+        btnFilter = findViewById(R.id.btnFilter)
         recyclerAttendance = findViewById(R.id.recyclerAttendance)
 
         attendanceAdapter = AttendanceAdapter(attendanceList)
@@ -60,6 +63,11 @@ class ViewEmployeeActivity : AppCompatActivity() {
         btnDownload.setOnClickListener {
             showExportOptions()
         }
+
+        btnFilter.setOnClickListener {
+            showFilterBottomSheet()
+        }
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -262,5 +270,131 @@ class ViewEmployeeActivity : AppCompatActivity() {
             java.io.FileOutputStream(file).use { it.write(content) }
             file
         }
+    }
+
+    @SuppressLint("InflateParams", "SimpleDateFormat")
+    private fun showFilterBottomSheet() {
+        val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.layout_filter, null)
+        bottomSheet.setContentView(view)
+
+        val chipGroupStatus = view.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupStatus)
+        val chipGroupDate = view.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupDate)
+        val layoutCustomDates = view.findViewById<LinearLayout>(R.id.layoutCustomDates)
+        val btnStartDate = view.findViewById<Button>(R.id.btnStartDate)
+        val btnEndDate = view.findViewById<Button>(R.id.btnEndDate)
+        val btnApply = view.findViewById<Button>(R.id.btnApply)
+        val btnReset = view.findViewById<Button>(R.id.btnReset)
+
+        var startDate: String? = null
+        var endDate: String? = null
+
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+        // Show/Hide custom date pickers
+        chipGroupDate.setOnCheckedChangeListener { _, checkedId ->
+            layoutCustomDates.visibility = if (checkedId == R.id.chipCustomRange) View.VISIBLE else View.GONE
+        }
+
+        // Date pickers
+        btnStartDate.setOnClickListener {
+            val calendar = java.util.Calendar.getInstance()
+            val datePicker = android.app.DatePickerDialog(this,
+                { _, year, month, day ->
+                    startDate = String.format("%04d-%02d-%02d", year, month + 1, day)
+                    btnStartDate.text = startDate
+                },
+                calendar.get(java.util.Calendar.YEAR),
+                calendar.get(java.util.Calendar.MONTH),
+                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            )
+            datePicker.show()
+        }
+
+        btnEndDate.setOnClickListener {
+            val calendar = java.util.Calendar.getInstance()
+            val datePicker = android.app.DatePickerDialog(this,
+                { _, year, month, day ->
+                    endDate = String.format("%04d-%02d-%02d", year, month + 1, day)
+                    btnEndDate.text = endDate
+                },
+                calendar.get(java.util.Calendar.YEAR),
+                calendar.get(java.util.Calendar.MONTH),
+                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            )
+            datePicker.show()
+        }
+
+        // Apply filter
+        btnApply.setOnClickListener {
+            val employeeId = intent.getStringExtra("employeeId") ?: return@setOnClickListener
+            var query = db.collection("attendance").whereEqualTo("employeeId", employeeId)
+
+            // ✅ Collect selected statuses (convert to lowercase)
+            val selectedStatuses = mutableListOf<String>()
+            for (chipId in chipGroupStatus.checkedChipIds) {
+                val chip = chipGroupStatus.findViewById<com.google.android.material.chip.Chip>(chipId)
+                if (chip != null) {
+                    selectedStatuses.add(chip.text.toString().trim()) // keep "Present"
+                }
+            }
+
+            if (selectedStatuses.isNotEmpty()) {
+                query = query.whereIn("status", selectedStatuses)
+            }
+
+
+            // ✅ Apply date filter
+            val selectedDateChipId = chipGroupDate.checkedChipId
+            when (selectedDateChipId) {
+                R.id.chipLastMonth -> {
+                    val cal = java.util.Calendar.getInstance()
+                    val end = dateFormatter.format(cal.time)
+                    cal.add(java.util.Calendar.MONTH, -1)
+                    val start = dateFormatter.format(cal.time)
+                    query = query.whereGreaterThanOrEqualTo("date", start)
+                        .whereLessThanOrEqualTo("date", end)
+                }
+                R.id.chipLast3Months -> {
+                    val cal = java.util.Calendar.getInstance()
+                    val end = dateFormatter.format(cal.time)
+                    cal.add(java.util.Calendar.MONTH, -3)
+                    val start = dateFormatter.format(cal.time)
+                    query = query.whereGreaterThanOrEqualTo("date", start)
+                        .whereLessThanOrEqualTo("date", end)
+                }
+                R.id.chipCustomRange -> {
+                    if (startDate != null && endDate != null) {
+                        query = query.whereGreaterThanOrEqualTo("date", startDate!!)
+                            .whereLessThanOrEqualTo("date", endDate!!)
+                    }
+                }
+            }
+
+            // ✅ Execute query
+            query.orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener { result ->
+                    attendanceList.clear()
+                    for (doc in result) {
+                        val record = doc.toObject(AttendanceRecord::class.java)
+                        attendanceList.add(record)
+                    }
+                    attendanceAdapter.notifyDataSetChanged()
+                    Toast.makeText(this, "Filter applied", Toast.LENGTH_SHORT).show()
+                }
+
+            bottomSheet.dismiss()
+        }
+
+
+        // Reset filter
+        btnReset.setOnClickListener {
+            val employeeId = intent.getStringExtra("employeeId")
+            if (employeeId != null) fetchAttendanceHistory(employeeId)
+            bottomSheet.dismiss()
+        }
+
+        bottomSheet.show()
     }
 }
