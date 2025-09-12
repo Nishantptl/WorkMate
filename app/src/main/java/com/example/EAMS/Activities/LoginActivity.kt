@@ -17,6 +17,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var btnLogin: Button
     private lateinit var txtCreateAccount: TextView
     private lateinit var txtResetPassword: TextView
+    private lateinit var txtErrorMessage: TextView
 
     private lateinit var auth: FirebaseAuth
     private lateinit var role: String
@@ -34,6 +35,7 @@ class LoginActivity : AppCompatActivity() {
         btnLogin = findViewById(R.id.btnLogIn)
         txtCreateAccount = findViewById(R.id.txtNewAccount)
         txtResetPassword = findViewById(R.id.txtResetPassword)
+        txtErrorMessage = findViewById(R.id.txtErrorMessage)
 
         if (role == "ADMIN") {
             btnLogin.text = "Login as Admin"
@@ -48,95 +50,84 @@ class LoginActivity : AppCompatActivity() {
         btnLogin.setOnClickListener { loginClicked() }
         txtCreateAccount.setOnClickListener {
             val intent = Intent(this, NewUserActivity::class.java)
-            intent.putExtra("ROLE", role)
             startActivity(intent)
             finish()
         }
 
-        txtResetPassword.setOnClickListener {
-            showPasswordResetDialog()
-        }
+        txtResetPassword.setOnClickListener { showPasswordResetDialog() }
     }
 
     private fun loginClicked() {
         val email = edtEmail.text.toString().trim()
         val password = edtPassword.text.toString().trim()
         when {
-            email.isEmpty() -> showToast("Please enter your email")
-            password.isEmpty() -> showToast("Please enter your password")
+            email.isEmpty() -> showError("Please enter your email")
+            password.isEmpty() -> showError("Please enter your password")
             else -> loginUser(email, password)
         }
     }
 
     private fun loginUser(email: String, password: String) {
-        // Start Progress Dialog here if you have one
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val user = auth.currentUser
-                    val userId = user?.uid
-
+                    hideError()
+                    val userId = auth.currentUser?.uid
                     if (userId == null) {
-                        showToast("Authentication failed. Please try again.")
+                        showError("Authentication failed. Please try again.")
                         return@addOnCompleteListener
                     }
 
                     val db = FirebaseFirestore.getInstance()
 
                     if (role == "ADMIN") {
-
                         db.collection("admin").document(userId).get()
                             .addOnSuccessListener { document ->
                                 if (document.exists()) {
-                                    showToast("Welcome Admin!")
+                                    Toast.makeText(this, "Welcome Admin!", Toast.LENGTH_SHORT).show()
                                     startActivity(Intent(this, AdminDashboardActivity::class.java))
                                     finish()
                                 } else {
-                                    // User is authenticated but not in the employee collection
-                                    showToast("Admin record not found. Access denied.")
+                                    showError("Admin record not found. Access denied.")
                                     auth.signOut()
                                 }
                             }
                             .addOnFailureListener { e ->
-                                showToast("Error verifying admin: ${e.localizedMessage}")
+                                showError("Error verifying admin: ${e.localizedMessage}")
                                 auth.signOut()
                             }
-                        // ▲▲▲ MODIFICATION END ▲▲▲
-                    } else { // Employee Logic
+                    } else {
                         db.collection("employee").document(userId).get()
                             .addOnSuccessListener { document ->
                                 if (document.exists()) {
                                     val status = document.getString("status") ?: "inactive"
                                     if (status == "inactive") {
-                                        showToast("Your account is deactivated. Please contact admin.")
+                                        showError("Your account is deactivated. Please contact admin.")
                                         auth.signOut()
                                     } else {
-                                        showToast("Welcome Employee!")
+                                        Toast.makeText(this, "Welcome Employee!", Toast.LENGTH_SHORT).show()
                                         startActivity(Intent(this, EmployeeDashboardActivity::class.java))
-                                        finish() // Close LoginActivity
+                                        finish()
                                     }
                                 } else {
-                                    showToast("No employee record found. Contact admin.")
+                                    showError("No employee record found. Contact admin.")
                                     auth.signOut()
                                 }
                             }
                             .addOnFailureListener { e ->
-                                showToast("Error: ${e.localizedMessage}")
+                                showError("Error: ${e.localizedMessage}")
                                 auth.signOut()
                             }
                     }
                 } else {
-                    // Stop Progress Dialog here
-                    showToast("Login failed: ${task.exception?.localizedMessage}")
+                    showError("Wrong Credentials. Please try again.")
                 }
             }
     }
 
-
     private fun showPasswordResetDialog() {
         val dialogView = LayoutInflater.from(this)
             .inflate(R.layout.dialog_reset_password, null)
-
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtResetEmail)
 
         AlertDialog.Builder(this)
@@ -145,7 +136,7 @@ class LoginActivity : AppCompatActivity() {
             .setPositiveButton("Reset") { _, _ ->
                 val email = edtEmail.text.toString().trim()
                 if (email.isEmpty()) {
-                    showToast("Please enter your email")
+                    showError("Please enter your email")
                 } else {
                     FirebaseFirestore.getInstance()
                         .collection("employee")
@@ -155,17 +146,17 @@ class LoginActivity : AppCompatActivity() {
                             if (!documents.isEmpty) {
                                 auth.sendPasswordResetEmail(email)
                                     .addOnSuccessListener {
-                                        showToast("Password reset link sent to $email")
+                                        showError("Password reset link sent to $email")
                                     }
                                     .addOnFailureListener { e ->
-                                        showToast("Error: ${e.localizedMessage}")
+                                        showError("Error: ${e.localizedMessage}")
                                     }
                             } else {
-                                showToast("This email is not registered as an employee")
+                                showError("This email is not registered as an employee")
                             }
                         }
                         .addOnFailureListener { e ->
-                            showToast("Error checking employee record: ${e.localizedMessage}")
+                            showError("Error checking employee record: ${e.localizedMessage}")
                         }
                 }
             }
@@ -173,7 +164,12 @@ class LoginActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showToast(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    private fun showError(message: String) {
+        txtErrorMessage.text = message
+        txtErrorMessage.visibility = TextView.VISIBLE
+    }
+
+    private fun hideError() {
+        txtErrorMessage.visibility = TextView.GONE
     }
 }
