@@ -26,13 +26,13 @@ class HomeFragment : Fragment() {
     private lateinit var txtTotalWorkTime: TextView
     private lateinit var txtOnBreak: TextView
     private lateinit var txtBreak: TextView
+    private lateinit var blurOverlay: View
+    private lateinit var progressBar: ProgressBar
 
-    // --- Firebase ---
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private var employeeName: String? = null
 
-    // --- State variables for time tracking ---
     private var isClockedIn = false
     private var isBreak = false
     private var checkInTime: Long = 0
@@ -90,6 +90,8 @@ class HomeFragment : Fragment() {
         txtTotalWorkTime = view.findViewById(R.id.txtTotalWorkTime)
         txtOnBreak = view.findViewById(R.id.txtOnBreak)
         txtBreak = view.findViewById(R.id.txtBreak)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
+        progressBar  = view.findViewById(R.id.progressBar)
 
         loadEmployeeDetails()
         setDate()
@@ -106,8 +108,14 @@ class HomeFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     // --- UI and Data Loading ---
     private fun loadEmployeeDetails() {
+        showLoading(true)
         val userId = auth.currentUser?.uid
         if (userId != null) {
             firestore.collection("employee")
@@ -122,8 +130,10 @@ class HomeFragment : Fragment() {
                         txtEmployeeName.text = "Hi, $name"
                         txtEmployeeDepartment.text = department
                     }
+                    showLoading(false)
                 }
                 .addOnFailureListener {
+                    showLoading(false)
                     Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
                 }
         }

@@ -27,6 +27,7 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
         val checkIn: TextView = itemView.findViewById(R.id.txtHistoryCheckIn)
         val checkOut: TextView = itemView.findViewById(R.id.txtHistoryCheckOut)
         val totalHours: TextView = itemView.findViewById(R.id.txtHistoryTotalHours)
+        val divider: View = itemView.findViewById(R.id.divider)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
@@ -56,19 +57,31 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
         }
         holder.status.setBackgroundColor(ContextCompat.getColor(holder.itemView.context, statusColor))
 
-        holder.checkIn.text = record.checkInTime?.let {
-            "In: ${timeFormat.format(Date(it))}"
-        } ?: "In: -"
+        if (record.status.equals("Absent", ignoreCase = true)) {
+            holder.divider.visibility = View.GONE
+            holder.checkIn.visibility = View.GONE
+            holder.checkOut.visibility = View.GONE
+            holder.totalHours.visibility = View.GONE
+        } else {
+            holder.divider.visibility = View.VISIBLE
+            holder.checkIn.visibility = View.VISIBLE
+            holder.checkOut.visibility = View.VISIBLE
+            holder.totalHours.visibility = View.VISIBLE
 
-        holder.checkOut.text = record.checkOutTime?.let {
-            "Out: ${timeFormat.format(Date(it))}"
-        } ?: "Out: -"
+            holder.checkIn.text = record.checkInTime?.let {
+                "In: ${timeFormat.format(Date(it))}"
+            } ?: "In: -"
 
-        holder.totalHours.text = record.totalWorkDuration?.let { duration ->
-            val hours = TimeUnit.MILLISECONDS.toHours(duration)
-            val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
-            String.format("Total: %02dh %02dm", hours, minutes)
-        } ?: "Total: --h --m"
+            holder.checkOut.text = record.checkOutTime?.let {
+                "Out: ${timeFormat.format(Date(it))}"
+            } ?: "Out: -"
+
+            holder.totalHours.text = record.totalWorkDuration?.let { duration ->
+                val hours = TimeUnit.MILLISECONDS.toHours(duration)
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
+                String.format("Total: %02dh %02dm", hours, minutes)
+            } ?: "Total: --h --m"
+        }
     }
 
     override fun getItemCount() = historyList.size

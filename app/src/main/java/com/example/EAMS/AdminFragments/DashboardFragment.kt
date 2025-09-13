@@ -2,7 +2,7 @@ package com.example.EAMS.AdminFragments
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.os.Bundle
+import android.os.*
 import android.view.*
 import android.widget.*
 import androidx.core.content.ContextCompat
@@ -19,6 +19,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class DashboardFragment : Fragment() {
+
+    private lateinit var progressBar: ProgressBar
+    private lateinit var blurOverlay: View
 
     private lateinit var txtWelcome: TextView
     private lateinit var txtOrganization: TextView
@@ -39,6 +42,8 @@ class DashboardFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_dashboard, container, false)
 
         // Match IDs with your XML
+        progressBar = view.findViewById(R.id.progressBar)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
         txtWelcome = view.findViewById(R.id.txtWelcome)
         txtOrganization = view.findViewById(R.id.txtOrganization)
         txtDate = view.findViewById(R.id.txtDate)
@@ -56,15 +61,22 @@ class DashboardFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     private fun setupUI() {
         txtDate.text = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
 
     private fun fetchAdminDetails() {
         val user = auth.currentUser ?: return
+        showLoading(true)
         db.collection("admin").document(user.uid)
             .get()
             .addOnSuccessListener { doc ->
+                showLoading(false)
                 if (doc.exists()) {
                     val name = doc.getString("name") ?: "Admin"
                     val organization = doc.getString("organization") ?: "Organization"
@@ -76,6 +88,7 @@ class DashboardFragment : Fragment() {
                 }
             }
             .addOnFailureListener {
+                showLoading(false)
                 Toast.makeText(requireContext(),
                     "Failed to load admin info: ${it.localizedMessage}",
                     Toast.LENGTH_SHORT).show()

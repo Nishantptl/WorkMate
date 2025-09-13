@@ -21,6 +21,9 @@ class HistoryFragment : Fragment() {
     private lateinit var historyAdapter: AttendanceHistoryAdapter
     private val historyList = mutableListOf<AttendanceRecord>()
 
+    private lateinit var blurOverlay: FrameLayout
+    private lateinit var contentLayout: LinearLayout
+
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -33,6 +36,8 @@ class HistoryFragment : Fragment() {
         // Initialize RecyclerView
         historyRecyclerView = view.findViewById(R.id.historyRecyclerView)
         txtNoHistory = view.findViewById(R.id.txtNoHistory)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
+        contentLayout = view.findViewById(R.id.contentLayout)
 
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         historyAdapter = AttendanceHistoryAdapter(historyList)
@@ -43,43 +48,47 @@ class HistoryFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     private fun loadAttendanceHistory() {
-        val userId = auth.currentUser?.uid ?: return
+        showLoading(true)
+
+        val userId = auth.currentUser?.uid ?: return showLoading(false)
 
         firestore.collection("attendance")
             .whereEqualTo("employeeId", userId)
             .orderBy("date", Query.Direction.DESCENDING)
             .get()
             .addOnSuccessListener { documents ->
+                historyList.clear()
 
                 if (documents.isEmpty) {
-                    historyList.clear()
-                    historyAdapter.notifyDataSetChanged()
-
                     historyRecyclerView.visibility = View.GONE
                     txtNoHistory.visibility = View.VISIBLE
-                    return@addOnSuccessListener
+                } else {
+                    for (document in documents) {
+                        val record = AttendanceRecord(
+                            date = document.getString("date") ?: "",
+                            status = document.getString("status") ?: "N/A",
+                            checkInTime = document.getLong("checkInTime"),
+                            checkOutTime = document.getLong("checkOutTime"),
+                            totalWorkDuration = document.getLong("totalWorkDuration")
+                        )
+                        historyList.add(record)
+                    }
+                    historyAdapter.notifyDataSetChanged()
+                    historyRecyclerView.visibility = View.VISIBLE
+                    txtNoHistory.visibility = View.GONE
                 }
 
-                historyList.clear() // Clear previous data
-                for (document in documents) {
-                    val record = AttendanceRecord(
-                        date = document.getString("date") ?: "",
-                        status = document.getString("status") ?: "N/A",
-                        checkInTime = document.getLong("checkInTime"),
-                        checkOutTime = document.getLong("checkOutTime"),
-                        totalWorkDuration = document.getLong("totalWorkDuration")
-                    )
-                    historyList.add(record)
-                }
-                historyAdapter.notifyDataSetChanged()
-
-                historyRecyclerView.visibility = View.VISIBLE
-                txtNoHistory.visibility = View.GONE
+                showLoading(false)
             }
             .addOnFailureListener { e ->
                 Toast.makeText(context, "Error loading history: ${e.message}", Toast.LENGTH_LONG).show()
-                Log.d("HistoryFragment", "Error loading history: ${e.message}")
+                Log.e("HistoryFragment", "Error loading history: ${e.message}")
+                showLoading(false)
             }
     }
 }

@@ -20,11 +20,13 @@ class ReportFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ReportEmployeeAdapter
     private lateinit var searchBox: EditText
-    private val employeeList = mutableListOf<ReportEmployee>()
+    private lateinit var progressBar: ProgressBar
+    private lateinit var blurOverlay: View
 
+    private val employeeList = mutableListOf<ReportEmployee>()
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private var orgName: String? = null
+    private var organizationName: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,6 +36,8 @@ class ReportFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.recyclerEmployees)
         searchBox = view.findViewById(R.id.edtSearchEmployee)
+        progressBar = view.findViewById(R.id.progressBar)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
 
         adapter = ReportEmployeeAdapter(employeeList) { employee ->
             val intent = Intent(requireContext(), ViewEmployeeActivity::class.java)
@@ -45,7 +49,6 @@ class ReportFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        // First find current admin's organization, then load employees of that org
         fetchAdminOrganization()
 
         searchBox.addTextChangedListener(object : TextWatcher {
@@ -59,24 +62,33 @@ class ReportFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     private fun fetchAdminOrganization() {
+        showLoading(true)
         val uid = auth.currentUser?.uid ?: return
         db.collection("admin").document(uid)
             .get()
             .addOnSuccessListener { doc ->
-                orgName = doc.getString("organization")
-                if (orgName.isNullOrEmpty()) {
+                organizationName = doc.getString("organization")
+                if (organizationName.isNullOrEmpty()) {
                     Toast.makeText(requireContext(), "Organization not found.", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                 } else {
-                    loadEmployees(orgName!!)
+                    loadEmployees(organizationName!!)
                 }
             }
             .addOnFailureListener {
                 Toast.makeText(requireContext(), "Failed to get organization.", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
     }
 
     private fun loadEmployees(organization: String) {
+        showLoading(true)
         db.collection("employee")
             .whereEqualTo("organization", organization)
             .get()
@@ -88,18 +100,17 @@ class ReportFragment : Fragment() {
                     employeeList.add(employee)
                 }
                 adapter.updateList(employeeList)
+                showLoading(false)
             }
             .addOnFailureListener {
                 Toast.makeText(requireContext(), "Error loading employees", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
     }
 
     private fun filterList(query: String) {
-        val filtered = if (query.isEmpty()) {
-            employeeList
-        } else {
-            employeeList.filter { it.name.contains(query, ignoreCase = true) }
-        }
+        val filtered = if (query.isEmpty()) employeeList
+        else employeeList.filter { it.name.contains(query, ignoreCase = true) }
         adapter.updateList(filtered)
     }
 }

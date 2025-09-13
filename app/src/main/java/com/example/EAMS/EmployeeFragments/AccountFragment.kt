@@ -22,6 +22,9 @@ class AccountFragment : Fragment() {
     private lateinit var layoutHelp: LinearLayout
     private lateinit var layoutLogout: LinearLayout
 
+    private lateinit var blurOverlay: FrameLayout
+    private lateinit var scrollProfile: ScrollView
+
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -36,6 +39,9 @@ class AccountFragment : Fragment() {
         txtUserEmail = view.findViewById(R.id.txtUserEmail)
         txtUserOrganization = view.findViewById(R.id.txtUserOrganization)
 
+        blurOverlay = view.findViewById(R.id.blurOverlay)
+        scrollProfile = view.findViewById(R.id.scrollProfile)
+
         layoutEditProfile = view.findViewById(R.id.layoutEditProfile)
         layoutCheckInOut = view.findViewById(R.id.layoutCheckInOut)
         layoutAttendanceHistory = view.findViewById(R.id.layoutAttendanceHistory)
@@ -48,7 +54,12 @@ class AccountFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     private fun loadUserProfile() {
+        showLoading(true)
         val currentUser = auth.currentUser
         if (currentUser != null) {
             txtUserEmail.text = currentUser.email
@@ -61,11 +72,13 @@ class AccountFragment : Fragment() {
                         txtUserName.text = document.getString("name") ?: "Employee"
                         txtUserOrganization.text = document.getString("organization") ?: "Organization"
                     }
+                    showLoading(false)
                 }
                 .addOnFailureListener {
                     Toast.makeText(context, "Failed to load profile.", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                 }
-        }
+        }else showLoading(false)
     }
 
     private fun setupClickListeners() {

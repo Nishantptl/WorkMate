@@ -1,5 +1,6 @@
 package com.example.EAMS.AdminFragments
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -24,6 +25,8 @@ class EmployeeFragment : Fragment() {
     private lateinit var employeeList: ArrayList<Employee>
     private lateinit var db: FirebaseFirestore
     private lateinit var btnAddEmployee: ImageButton
+    private lateinit var progressBar: ProgressBar
+    private lateinit var blurOverlay: View
 
     private var adminOrganization: String? = null
 
@@ -35,6 +38,8 @@ class EmployeeFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.recyclerEmployees)
         btnAddEmployee = view.findViewById(R.id.btnAddEmployee)
+        progressBar = view.findViewById(R.id.progressBar)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
         db = FirebaseFirestore.getInstance()
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -47,6 +52,12 @@ class EmployeeFragment : Fragment() {
         fetchAdminOrganization()
         return view
     }
+
+    private fun showLoading(show: Boolean) {
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
 
     private fun fetchAdminOrganization() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -66,16 +77,18 @@ class EmployeeFragment : Fragment() {
             }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun fetchEmployees() {
         if (adminOrganization.isNullOrEmpty()) {
-            // Try again after adminOrganization is fetched
             Log.w("Firestore", "Admin organization not loaded yet.")
             return
         }
+        showLoading(true)
         db.collection("employee")
             .whereEqualTo("organization", adminOrganization)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
+                    showLoading(false)
                     Log.e("Firestore", "Error fetching employees", e)
                     return@addSnapshotListener
                 }
@@ -91,6 +104,9 @@ class EmployeeFragment : Fragment() {
                     }
                     employeeAdapter.notifyDataSetChanged()
                     Log.d("Firestore", "Realtime update: ${employeeList.size} employees")
+                    view?.postDelayed({
+                        showLoading(false)
+                    }, 1000)
                 } else {
                     employeeList.clear()
                     employeeAdapter.notifyDataSetChanged()
@@ -99,6 +115,7 @@ class EmployeeFragment : Fragment() {
             }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun showAddDialog() {
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_add_employee, null)
@@ -232,7 +249,7 @@ class EmployeeFragment : Fragment() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val responseBody = response.body?.string()
+                val responseBody = response.body.string()
                 Log.i("SendGrid", "Response: ${response.code} - ${response.message}")
                 Log.i("SendGrid", "Response Body: $responseBody")
             }

@@ -19,6 +19,8 @@ class SearchFragment : Fragment() {
     private lateinit var edtSearch: EditText
     private lateinit var rvEmployees: RecyclerView
     private lateinit var txtEmptyState: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var blurOverlay: View
     private lateinit var employeeAdapter: EmployeeAdapter
 
     private val db = FirebaseFirestore.getInstance()
@@ -37,6 +39,9 @@ class SearchFragment : Fragment() {
         rvEmployees = view.findViewById(R.id.rvEmployees)
         txtEmptyState = view.findViewById(R.id.txtEmptyState)
 
+        progressBar = view.findViewById(R.id.progressBar)
+        blurOverlay = view.findViewById(R.id.blurOverlay)
+
         rvEmployees.layoutManager = LinearLayoutManager(requireContext())
         employeeAdapter = EmployeeAdapter(arrayListOf(),
             onEdit = { employee -> showUpdateDialog(employee) },
@@ -44,7 +49,6 @@ class SearchFragment : Fragment() {
         )
         rvEmployees.adapter = employeeAdapter
 
-        // Get current admin’s organization first, then fetch employees of that org only
         fetchAdminOrganization()
 
         edtSearch.addTextChangedListener(object : TextWatcher {
@@ -58,7 +62,14 @@ class SearchFragment : Fragment() {
         return view
     }
 
+    private fun showLoading(show: Boolean) {
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        blurOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        rvEmployees.alpha = if (show) 0.6f else 1.0f
+    }
+
     private fun fetchAdminOrganization() {
+        showLoading(true)
         val uid = auth.currentUser?.uid ?: return
         db.collection("admin").document(uid)
             .get()
@@ -66,16 +77,19 @@ class SearchFragment : Fragment() {
                 orgName = doc.getString("organization")
                 if (orgName.isNullOrEmpty()) {
                     showEmptyMessage("Organization not found.")
-                    return@addOnSuccessListener
+                    showLoading(false)
+                } else {
+                    fetchEmployeesOfOrg(orgName!!)
                 }
-                fetchEmployeesOfOrg(orgName!!)
             }
             .addOnFailureListener {
                 showEmptyMessage("Failed to get organization.")
+                showLoading(false)
             }
     }
 
     private fun fetchEmployeesOfOrg(organization: String) {
+        showLoading(true)
         db.collection("employee")
             .whereEqualTo("organization", organization)
             .get()
@@ -95,17 +109,19 @@ class SearchFragment : Fragment() {
                     txtEmptyState.visibility = View.GONE
                     employeeAdapter.updateList(list)
                 }
+                showLoading(false)
             }
             .addOnFailureListener { e ->
                 Log.e("SearchFragment", "Error fetching employees", e)
                 showEmptyMessage("Error loading employees")
                 rvEmployees.visibility = View.GONE
+                showLoading(false)
             }
     }
 
     private fun filterEmployees(query: String) {
-        val filtered = if (query.isEmpty()) fullEmployeeList else
-            fullEmployeeList.filter { it.name.contains(query, ignoreCase = true) }
+        val filtered = if (query.isEmpty()) fullEmployeeList
+        else fullEmployeeList.filter { it.name.contains(query, ignoreCase = true) }
 
         if (filtered.isEmpty()) {
             rvEmployees.visibility = View.GONE
@@ -132,16 +148,12 @@ class SearchFragment : Fragment() {
         val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
         val layoutJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
 
-        // Pre-fill values
         edtName.setText(employee.name)
         edtDepartment.setText(employee.department)
         edtEmail.setText(employee.email)
 
-        // Hide password field if not needed
         edtPassword.visibility = View.GONE
         layoutJoiningDate.visibility = View.GONE
-
-        // Joining date view is completely ignored/removed
 
         AlertDialog.Builder(requireContext())
             .setTitle("Update Employee")
