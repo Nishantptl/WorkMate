@@ -1,7 +1,9 @@
 package com.example.EAMS.AdminFragments
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import android.os.Bundle
+import android.text.method.PasswordTransformationMethod
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.*
@@ -13,10 +15,12 @@ import com.example.EAMS.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.EAMS.Model.*
 import com.example.EAMS.Adapters.*
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import java.io.IOException
+import java.util.Calendar
 
 class EmployeeFragment : Fragment() {
 
@@ -24,7 +28,7 @@ class EmployeeFragment : Fragment() {
     private lateinit var employeeAdapter: AddEmployeeAdapter
     private lateinit var employeeList: ArrayList<Employee>
     private lateinit var db: FirebaseFirestore
-    private lateinit var btnAddEmployee: ImageButton
+    private lateinit var btnAddEmployee: FloatingActionButton
     private lateinit var progressBar: ProgressBar
     private lateinit var blurOverlay: View
 
@@ -124,26 +128,39 @@ class EmployeeFragment : Fragment() {
         val edtDepartment = dialogView.findViewById<EditText>(R.id.edtDepartment)
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
         val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
-        val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
+        val layoutJoiningDate = dialogView.findViewById<View>(R.id.layoutJoiningDate)
         val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
+        val ivPasswordToggle = dialogView.findViewById<ImageView>(R.id.ivPasswordToggle)
 
-        // DatePicker for joining date
-        edtJoiningDate.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
-            val year = calendar.get(java.util.Calendar.YEAR)
-            val month = calendar.get(java.util.Calendar.MONTH)
-            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        var isPasswordVisible = false
+        ivPasswordToggle.setOnClickListener {
+            isPasswordVisible = !isPasswordVisible
+            if (isPasswordVisible) {
+                edtPassword.transformationMethod = null // Show password
+                ivPasswordToggle.setImageResource(R.drawable.ic_eye)
+            } else {
+                edtPassword.transformationMethod = PasswordTransformationMethod.getInstance() // Hide password
+                ivPasswordToggle.setImageResource(R.drawable.ic_eye_off)
+            }
+            edtPassword.setSelection(edtPassword.text.length) // Move cursor to end
+        }
 
-            val datePicker = android.app.DatePickerDialog(requireContext(),
+        layoutJoiningDate.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePicker = DatePickerDialog(
+                requireContext(),
                 { _, selectedYear, selectedMonth, selectedDay ->
-                    txtJoiningDate.setText("$selectedDay-${selectedMonth + 1}-$selectedYear")
+                    txtJoiningDate.text = "$selectedDay-${selectedMonth + 1}-$selectedYear"
                 }, year, month, day
             )
             datePicker.show()
         }
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Add Employee")
             .setView(dialogView)
             .setPositiveButton("Add") { _, _ ->
                 val name = edtName.text.toString()

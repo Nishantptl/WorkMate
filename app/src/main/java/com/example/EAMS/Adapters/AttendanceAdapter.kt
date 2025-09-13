@@ -1,7 +1,9 @@
 package com.example.EAMS.Adapters
 
 import android.annotation.SuppressLint
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.EAMS.Model.AttendanceRecord
@@ -37,31 +39,40 @@ class AttendanceAdapter(
         holder.txtDate.text = "Date: ${record.date}"
         holder.txtStatus.text = "Status: ${record.status}"
         holder.txtStatus.setTextColor(
-            if (record.status == "Present")
-                holder.itemView.context.getColor(R.color.Present)
-            else if(record.status == "Absent")
-                holder.itemView.context.getColor(R.color.Absent)
-            else if(record.status == "Half Day")
-                holder.itemView.context.getColor(R.color.HalfDay)
-            else if(record.status == "Late")
-                holder.itemView.context.getColor(R.color.Late)
-            else
-                holder.itemView.context.getColor(R.color.black)
+            when (record.status) {
+                "Present" -> holder.itemView.context.getColor(R.color.Present)
+                "Absent" -> holder.itemView.context.getColor(R.color.Absent)
+                "Half Day" -> holder.itemView.context.getColor(R.color.HalfDay)
+                "Late" -> holder.itemView.context.getColor(R.color.Late)
+                else -> holder.itemView.context.getColor(R.color.black)
+            }
         )
 
-        holder.txtCheckIn.text = record.checkInTime?.let {
-            "In: ${timeFormat.format(Date(it))}"
-        } ?: "In: -"
+        // Conditional visibility logic
+        if (record.status == "Absent") {
+            holder.txtCheckIn.visibility = View.GONE
+            holder.txtCheckOut.visibility = View.GONE
+            holder.txtDuration.visibility = View.GONE
+        } else {
+            // Make sure views are visible for other statuses
+            holder.txtCheckIn.visibility = View.VISIBLE
+            holder.txtCheckOut.visibility = View.VISIBLE
+            holder.txtDuration.visibility = View.VISIBLE
 
-        holder.txtCheckOut.text = record.checkOutTime?.let {
-            "Out: ${timeFormat.format(Date(it))}"
-        } ?: "Out: -"
+            holder.txtCheckIn.text = record.checkInTime?.let {
+                "In: ${timeFormat.format(Date(it))}"
+            } ?: "In: -"
 
-        holder.txtDuration.text = record.totalWorkDuration?.let { duration ->
-            val hours = TimeUnit.MILLISECONDS.toHours(duration)
-            val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
-            String.format("Total: %02dh %02dm", hours, minutes)
-        } ?: "Total: --h --m"
+            holder.txtCheckOut.text = record.checkOutTime?.let {
+                "Out: ${timeFormat.format(Date(it))}"
+            } ?: "Out: -"
+
+            holder.txtDuration.text = record.totalWorkDuration?.let { duration ->
+                val hours = TimeUnit.MILLISECONDS.toHours(duration)
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
+                String.format("Total: %02dh %02dm", hours, minutes)
+            } ?: "Total: --h --m"
+        }
     }
 
     override fun getItemCount(): Int = attendanceList.size

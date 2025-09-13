@@ -2,6 +2,7 @@ package com.example.EAMS.Activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -19,11 +20,15 @@ class NewUserActivity : AppCompatActivity() {
     private lateinit var btnRegister: Button
     private lateinit var txtLogIn: TextView
     private lateinit var txtErrorMessage: TextView
+    private lateinit var imgPasswordToggle: ImageView
+    private lateinit var imgConfirmPasswordToggle: ImageView
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
     private var selectedOrganization: String? = null
     private val companyList = mutableListOf<String>()
+    private var isPasswordVisible = false
+    private var isConfirmPasswordVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +45,8 @@ class NewUserActivity : AppCompatActivity() {
         btnRegister = findViewById(R.id.btnSignIn)
         txtLogIn = findViewById(R.id.txtLogIn)
         txtErrorMessage = findViewById(R.id.txtErrorMessage)
+        imgPasswordToggle = findViewById(R.id.imgPasswordToggle)
+        imgConfirmPasswordToggle = findViewById(R.id.imgConfirmPasswordToggle)
 
         btnRegister.text = "Register as Admin"
 
@@ -61,6 +68,32 @@ class NewUserActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+        imgPasswordToggle.setOnClickListener { togglePasswordVisibility() }
+        imgConfirmPasswordToggle.setOnClickListener { toggleConfirmPasswordVisibility() }
+    }
+
+    private fun togglePasswordVisibility() {
+        isPasswordVisible = !isPasswordVisible
+        if (isPasswordVisible) {
+            edtPassword.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            imgPasswordToggle.setImageResource(R.drawable.ic_eye_off)
+        } else {
+            edtPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            imgPasswordToggle.setImageResource(R.drawable.ic_eye)
+        }
+        edtPassword.setSelection(edtPassword.text.length)
+    }
+
+    private fun toggleConfirmPasswordVisibility() {
+        isConfirmPasswordVisible = !isConfirmPasswordVisible
+        if (isConfirmPasswordVisible) {
+            edtConfirmPassword.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            imgConfirmPasswordToggle.setImageResource(R.drawable.ic_eye_off)
+        } else {
+            edtConfirmPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            imgConfirmPasswordToggle.setImageResource(R.drawable.ic_eye)
+        }
+        edtConfirmPassword.setSelection(edtConfirmPassword.text.length)
     }
 
     private fun loadOrganizations() {

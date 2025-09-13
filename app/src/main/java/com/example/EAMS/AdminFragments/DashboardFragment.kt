@@ -2,7 +2,7 @@ package com.example.EAMS.AdminFragments
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.os.*
+import android.os.Bundle
 import android.view.*
 import android.widget.*
 import androidx.core.content.ContextCompat
@@ -12,9 +12,11 @@ import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
-import com.google.android.material.button.MaterialButton
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,14 +28,16 @@ class DashboardFragment : Fragment() {
     private lateinit var txtWelcome: TextView
     private lateinit var txtOrganization: TextView
     private lateinit var txtDate: TextView
-    private lateinit var txtTotalEmployees: TextView
-    private lateinit var statsGrid: GridLayout
+    private lateinit var txtTotalEmployee: TextView
+    private lateinit var txtPresentCount: TextView
+    private lateinit var txtAbsentCount: TextView
+    private lateinit var txtHalfDayCount: TextView
+    private lateinit var txtLateCount: TextView
     private lateinit var attendanceChart: PieChart
-    private lateinit var btnManageEmployees: MaterialButton
-    private lateinit var btnGenerateReports: MaterialButton
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private var adminOrganization: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,22 +45,21 @@ class DashboardFragment : Fragment() {
     ): View {
         val view = inflater.inflate(R.layout.fragment_dashboard, container, false)
 
-        // Match IDs with your XML
         progressBar = view.findViewById(R.id.progressBar)
         blurOverlay = view.findViewById(R.id.blurOverlay)
         txtWelcome = view.findViewById(R.id.txtWelcome)
         txtOrganization = view.findViewById(R.id.txtOrganization)
         txtDate = view.findViewById(R.id.txtDate)
-        txtTotalEmployees = view.findViewById(R.id.txtTotalEmployee)
-        statsGrid = view.findViewById(R.id.statsGrid)
+        txtTotalEmployee = view.findViewById(R.id.txtTotalEmployee)
         attendanceChart = view.findViewById(R.id.attendance_chart)
-        btnManageEmployees = view.findViewById(R.id.btn_manage_employees)
-        btnGenerateReports = view.findViewById(R.id.btn_generate_reports)
+
+        txtPresentCount = view.findViewById(R.id.txtPresentCount)
+        txtAbsentCount = view.findViewById(R.id.txtAbsentCount)
+        txtHalfDayCount = view.findViewById(R.id.txtHalfDayCount)
+        txtLateCount = view.findViewById(R.id.txtLateCount)
 
         setupUI()
         fetchAdminDetails()
-        fetchAttendanceData()
-        setupActions()
 
         return view
     }
@@ -79,61 +82,95 @@ class DashboardFragment : Fragment() {
                 showLoading(false)
                 if (doc.exists()) {
                     val name = doc.getString("name") ?: "Admin"
-                    val organization = doc.getString("organization") ?: "Organization"
+                    adminOrganization = doc.getString("organization")
                     txtWelcome.text = "Welcome, $name"
-                    txtOrganization.text = organization
+                    txtOrganization.text = adminOrganization ?: "Organization"
+
+                    fetchAttendanceData()
                 } else {
-                    Toast.makeText(requireContext(),
-                        "Admin record not found.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Admin record not found.", Toast.LENGTH_SHORT).show()
                 }
             }
             .addOnFailureListener {
                 showLoading(false)
-                Toast.makeText(requireContext(),
-                    "Failed to load admin info: ${it.localizedMessage}",
-                    Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Failed to load admin info: ${it.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
     }
 
     @SuppressLint("SetTextI18n")
     private fun fetchAttendanceData() {
+        if (adminOrganization == null) {
+            Toast.makeText(requireContext(), "Could not verify organization.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        showLoading(true)
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-        db.collection("attendance")
-            .whereEqualTo("date", today)
+        db.collection("employee")
+            .whereEqualTo("organization", adminOrganization)
             .get()
-            .addOnSuccessListener { snapshot ->
-                var present = 0; var late = 0; var halfDay = 0; var absent = 0
-                val totalEmployees = snapshot.size()
-
-                for (doc in snapshot) {
-                    when (doc.getString("status")) {
-                        "Present" -> present++
-                        "Late" -> late++
-                        "Half Day" -> halfDay++
-                        "Absent" -> absent++
-                    }
+            .addOnSuccessListener { employeeSnapshot ->
+                if (employeeSnapshot.isEmpty) {
+                    txtTotalEmployee.text = "Total Employees: 0"
+                    txtPresentCount.text = "0"
+                    txtAbsentCount.text = "0"
+                    txtHalfDayCount.text = "0"
+                    txtLateCount.text = "0"
+                    setupChart(0, 0, 0, 0)
+                    return@addOnSuccessListener
                 }
 
-                txtTotalEmployees.text = "Total Employees : $totalEmployees"
-                statsGrid.removeAllViews()
-                addStatCard("Present", present.toString())
-                addStatCard("Late", late.toString())
-                addStatCard("Half Day", halfDay.toString())
-                addStatCard("Absent", absent.toString())
+                val employeeIds = employeeSnapshot.documents.map { it.id }
+                txtTotalEmployee.text = "Total Employees: ${employeeIds.size}"
 
-                setupChart(present, late, halfDay, absent)
-            }
-            .addOnFailureListener {
-                Toast.makeText(requireContext(), "Error: ${it.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
+                if (employeeIds.isEmpty()) {
+                    setupChart(0,0,0,0)
+                    return@addOnSuccessListener
+                }
 
-    private fun addStatCard(title: String, value: String) {
-        val card = layoutInflater.inflate(R.layout.item_stat_card, statsGrid, false)
-        card.findViewById<TextView>(R.id.tv_stat_title).text = title
-        card.findViewById<TextView>(R.id.tv_stat_value).text = value
-        statsGrid.addView(card)
+                val chunkedEmployeeIds = employeeIds.chunked(10)
+                val tasks = mutableListOf<Task<QuerySnapshot>>()
+
+                for (chunk in chunkedEmployeeIds) {
+                    val task = db.collection("attendance")
+                        .whereEqualTo("date", today)
+                        .whereIn("employeeId", chunk)
+                        .get()
+                    tasks.add(task)
+                }
+
+                Tasks.whenAllSuccess<QuerySnapshot>(tasks)
+                    .addOnSuccessListener { results ->
+                        var present = 0; var late = 0; var halfDay = 0; var absent = 0
+
+                        for (attendanceSnapshot in results) {
+                            for (doc in attendanceSnapshot) {
+                                when (doc.getString("status")) {
+                                    "Present" -> present++
+                                    "Late" -> late++
+                                    "Half Day" -> halfDay++
+                                    "Absent" -> absent++
+                                }
+                            }
+                        }
+
+                        txtPresentCount.text = present.toString()
+                        txtAbsentCount.text = absent.toString()
+                        txtHalfDayCount.text = halfDay.toString()
+                        txtLateCount.text = late.toString()
+
+                        setupChart(present, late, halfDay, absent)
+                        showLoading(false)
+                    }
+                    .addOnFailureListener { e ->
+                        showLoading(false)
+                        Toast.makeText(requireContext(), "Error fetching attendance data: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            .addOnFailureListener { e ->
+                showLoading(false)
+                Toast.makeText(requireContext(), "Error fetching employees: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun setupChart(present: Int, late: Int, halfDay: Int, absent: Int) {
@@ -142,6 +179,13 @@ class DashboardFragment : Fragment() {
         if (late > 0) entries.add(PieEntry(late.toFloat(), "Late"))
         if (halfDay > 0) entries.add(PieEntry(halfDay.toFloat(), "Half Day"))
         if (absent > 0) entries.add(PieEntry(absent.toFloat(), "Absent"))
+
+        if (entries.isEmpty()) {
+            attendanceChart.clear()
+            attendanceChart.centerText = "No Data"
+            attendanceChart.invalidate()
+            return
+        }
 
         val dataSet = PieDataSet(entries, "Attendance")
         dataSet.colors = listOf(
@@ -160,13 +204,5 @@ class DashboardFragment : Fragment() {
         attendanceChart.animateY(1000)
         attendanceChart.invalidate()
     }
-
-    private fun setupActions() {
-        btnManageEmployees.setOnClickListener {
-            Toast.makeText(requireContext(), "Manage Employees clicked", Toast.LENGTH_SHORT).show()
-        }
-        btnGenerateReports.setOnClickListener {
-            Toast.makeText(requireContext(), "Generate Reports clicked", Toast.LENGTH_SHORT).show()
-        }
-    }
 }
+

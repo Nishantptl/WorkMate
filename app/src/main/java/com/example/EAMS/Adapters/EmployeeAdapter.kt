@@ -19,6 +19,7 @@ class EmployeeAdapter(
         val txtEmail: TextView = itemView.findViewById(R.id.txtEmployeeEmail)
         val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
         val btnToggleStatus: ImageButton = itemView.findViewById(R.id.btnToggleStatus)
+        val txtStatus: TextView = itemView.findViewById(R.id.txtStatus)
         val txtDepartment: TextView = itemView.findViewById(R.id.txtDepartment)
         val txtJoiningDate: TextView = itemView.findViewById(R.id.txtJoiningDate)
         val txtOrganization: TextView = itemView.findViewById(R.id.txtOrganization)
@@ -40,8 +41,12 @@ class EmployeeAdapter(
 
         if (employee.status == "active") {
             holder.btnToggleStatus.setImageResource(R.drawable.ic_active)
+            holder.txtStatus.text = "Active"
+            holder.txtStatus.setTextColor(holder.itemView.context.getColor(R.color.Present))
         } else {
             holder.btnToggleStatus.setImageResource(R.drawable.ic_inactive)
+            holder.txtStatus.text = "Inactive"
+            holder.txtStatus.setTextColor(holder.itemView.context.getColor(R.color.Absent))
         }
 
         holder.btnEdit.setOnClickListener { onEdit(employee) }

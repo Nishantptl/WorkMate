@@ -1,18 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="20dp"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:text="Filter Options"
+        android:textColor="@android:color/black"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="16dp"
+        android:background="#E0E0E0" />
 
     <!-- Status Filters -->
     <TextView
-        android:text="Filter by Status"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Filter by Status"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
 
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/chipGroupStatus"
@@ -33,6 +51,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Absent" />
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipHalfDay"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Half Day" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipLate"
@@ -40,17 +64,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Late" />
+
     </com.google.android.material.chip.ChipGroup>
 
 
     <!-- Date Filters -->
     <TextView
-        android:text="Filter by Date"
-        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="8dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:text="Filter by Date"
+        android:textColor="@android:color/black"
+        android:textSize="16sp" />
 
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/chipGroupDate"
@@ -63,7 +89,8 @@
             style="@style/Widget.MaterialComponents.Chip.Choice"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="All"/>
+            android:text="All"
+            android:checked="true"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipLastMonth"
@@ -91,47 +118,53 @@
     <!-- Custom Date Pickers (visible only if Custom Range selected) -->
     <LinearLayout
         android:id="@+id/layoutCustomDates"
-        android:orientation="horizontal"
-        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp">
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        tools:visibility="visible">
 
         <Button
             android:id="@+id/btnStartDate"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
             android:text="Start Date" />
 
         <Button
             android:id="@+id/btnEndDate"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
             android:text="End Date" />
     </LinearLayout>
 
     <!-- Action Buttons -->
     <LinearLayout
-        android:orientation="horizontal"
-        android:gravity="end"
-        android:layout_marginTop="20dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="end"
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btnReset"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reset" />
+            android:text="Reset"
+            android:textColor="?attr/colorPrimary" />
 
         <Button
             android:id="@+id/btnApply"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_btn"
             android:text="Apply"
-            android:layout_marginStart="12dp" />
+            android:textColor="@android:color/white" />
     </LinearLayout>
 </LinearLayout>

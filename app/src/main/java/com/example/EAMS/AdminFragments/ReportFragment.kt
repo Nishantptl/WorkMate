@@ -39,6 +39,8 @@ class ReportFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         blurOverlay = view.findViewById(R.id.blurOverlay)
 
+        fetchAdminOrganization()
+
         adapter = ReportEmployeeAdapter(employeeList) { employee ->
             val intent = Intent(requireContext(), ViewEmployeeActivity::class.java)
             intent.putExtra("employeeId", employee.id)
@@ -48,8 +50,6 @@ class ReportFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
-
-        fetchAdminOrganization()
 
         searchBox.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}

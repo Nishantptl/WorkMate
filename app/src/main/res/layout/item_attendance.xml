@@ -1,82 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    android:foreground="?android:attr/selectableItemBackground"
-    android:elevation="6dp"
+    android:orientation="vertical"
     android:padding="12dp"
-    android:radius="12dp">
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <!-- Date -->
+    <TextView
+        android:id="@+id/txtDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingBottom="4dp"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="28 Aug 2025" />
+
+    <!-- Status + Duration row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="4dp"
+        android:weightSum="2">
+
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            tools:text="Status: Present" />
+
+        <TextView
+            android:id="@+id/txtDuration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            tools:text="Duration: 7h 30m" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_margin="5dp">
+        android:orientation="horizontal"
+        android:weightSum="2">
 
-        <!-- Date -->
         <TextView
-            android:id="@+id/txtDate"
-            android:layout_width="wrap_content"
+            android:id="@+id/txtCheckIn"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="28 Aug 2025"
-            android:textStyle="bold"
-            android:textSize="16sp"
+            android:layout_weight="1"
             android:textColor="@color/black"
-            android:paddingBottom="4dp" />
+            android:textSize="14sp"
+            tools:text="Check-in: 09:00 AM" />
 
-        <!-- Status + Duration row -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/txtCheckOut"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:paddingBottom="4dp">
-
-            <TextView
-                android:id="@+id/txtStatus"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Status: Present"
-                android:textSize="14sp"
-                android:textColor="@color/black" />
-
-            <TextView
-                android:id="@+id/txtDuration"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="end"
-                android:text="Duration: 7h 30m"
-                android:textSize="14sp"
-                android:textColor="@color/black" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2">
-
-            <TextView
-                android:id="@+id/txtCheckIn"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Check-in: 09:00 AM"
-                android:textSize="14sp"
-                android:textColor="@color/black" />
-
-            <TextView
-                android:id="@+id/txtCheckOut"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="end"
-                android:text="Check-out: 05:30 PM"
-                android:textSize="14sp"
-                android:textColor="@color/black" />
-        </LinearLayout>
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            tools:text="Check-out: 05:30 PM" />
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginTop="15dp"/>
+
+</LinearLayout>
+

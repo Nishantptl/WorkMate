@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EmployeeAttendanceManagementSystem</string>
+    <string name="app_name">Attendify</string>
     <string name="default_web_client_id">504292767530-jml35h7sfv3ppho3aue7lr71njulbn4q.apps.googleusercontent.com</string>
 
     <string name="api_key">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</string>
