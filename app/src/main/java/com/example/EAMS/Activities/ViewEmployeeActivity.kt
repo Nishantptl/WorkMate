@@ -21,6 +21,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
 
     private lateinit var txtName: TextView
+    private lateinit var txtOrganization: TextView
     private lateinit var txtDepartment: TextView
     private lateinit var txtJoiningDate: TextView
     private lateinit var txtEmail: TextView
@@ -38,6 +39,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
 
         // UI refs
         txtName = findViewById(R.id.txtEmployeeName)
+        txtOrganization = findViewById(R.id.txtOrganization)
         txtDepartment = findViewById(R.id.txtEmployeeDepartment)
         txtJoiningDate = findViewById(R.id.txtEmployeeJoiningDate)
         txtEmail = findViewById(R.id.txtEmployeeEmail)
@@ -77,6 +79,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     txtName.text = ("Name : " + document.getString("name"))
+                    txtOrganization.text = ("Organization : " + document.getString("organization"))
                     txtDepartment.text = ("Department : " + document.getString("department"))
                     txtJoiningDate.text = ("Joining Date : " + document.getString("joiningDate"))
                     txtEmail.text = ("Email : " + document.getString("email"))
@@ -89,7 +92,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
             }
     }
 
-    @SuppressLint("SimpleDateFormat")
+    @SuppressLint("SimpleDateFormat", "SuspiciousIndentation")
     private fun fetchAttendanceHistory(employeeId: String) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
@@ -101,9 +104,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
                 attendanceList.clear()
                 for (document in result) {
                     val record = document.toObject(AttendanceRecord::class.java)
-
                         attendanceList.add(record)
-
                 }
                 attendanceAdapter.notifyDataSetChanged()
             }
@@ -129,6 +130,7 @@ class ViewEmployeeActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun generateEmployeePdf() {
         val employeeName = txtName.text.toString()
+        val employeeOrganization = txtOrganization.text.toString()
         val employeeEmail = txtEmail.text.toString()
         val employeeDept = txtDepartment.text.toString()
         val employeeJoinDate = txtJoiningDate.text.toString()
@@ -147,6 +149,8 @@ class ViewEmployeeActivity : AppCompatActivity() {
         canvas.drawText("Employee Profile", 230f, y.toFloat(), paint)
         y += 40
         canvas.drawText(employeeName, 50f, y.toFloat(), paint)
+        y += 30
+        canvas.drawText(employeeOrganization, 50f, y.toFloat(), paint)
         y += 30
         canvas.drawText(employeeEmail, 50f, y.toFloat(), paint)
         y += 30
@@ -198,6 +202,9 @@ class ViewEmployeeActivity : AppCompatActivity() {
 
         row = sheet.createRow(rowIdx++)
         row.createCell(0).setCellValue(txtName.text.toString())
+
+        row = sheet.createRow(rowIdx++)
+        row.createCell(0).setCellValue(txtOrganization.text.toString())
 
         row = sheet.createRow(rowIdx++)
         row.createCell(0).setCellValue(txtEmail.text.toString())
@@ -386,7 +393,6 @@ class ViewEmployeeActivity : AppCompatActivity() {
 
             bottomSheet.dismiss()
         }
-
 
         // Reset filter
         btnReset.setOnClickListener {

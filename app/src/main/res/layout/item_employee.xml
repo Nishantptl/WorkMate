@@ -23,7 +23,7 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Helly"
+                android:text="Employee Name"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:textColor="@android:color/black" />
@@ -67,7 +67,27 @@
                 android:id="@+id/txtEmployeeEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="rathwahelly@gmail.com"
+                android:text="gmail.com"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_organization_1"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/txtOrganization"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="organization"
                 android:textSize="14sp"/>
         </LinearLayout>
 

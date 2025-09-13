@@ -149,14 +149,14 @@ class HomeFragment : Fragment() {
                     val document = documents.documents[0]
                     currentAttendanceId = document.id
 
-                    // Convert directly into data class
                     val attendance = document.toObject(AttendanceRecord::class.java)
 
                     if (attendance != null) {
                         wasLate = attendance.status == "Late"
 
+                        // **** MODIFIED LOGIC: Switched to null checks for better state detection ****
                         when {
-                            // Case 1: Already Absent → disable button
+                            // Case 1: Already Absent
                             attendance.status == "Absent" -> {
                                 txtCheck.text = "Absent"
                                 btnClockIn.isEnabled = false
@@ -167,8 +167,17 @@ class HomeFragment : Fragment() {
                                 txtTime.text = "00:00:00"
                             }
 
-                            // Case 2: Checked in but not yet out
-                            attendance.checkInTime > 0 && attendance.checkOutTime == null -> {
+                            // Case 2: Work already completed (checked in and out)
+                            attendance.checkInTime != null && attendance.checkOutTime != null -> {
+                                showCompletedWorkState(
+                                    checkInTimestamp = attendance.checkInTime,
+                                    checkOutTimestamp = attendance.checkOutTime,
+                                    totalBreakDuration = attendance.totalBreakTime
+                                )
+                            }
+
+                            // Case 3: Checked in but not yet out
+                            attendance.checkInTime != null && attendance.checkOutTime == null -> {
                                 restoreClockInState(
                                     checkInTimestamp = attendance.checkInTime,
                                     totalBreakDuration = attendance.totalBreakTime,
@@ -178,14 +187,7 @@ class HomeFragment : Fragment() {
                                 )
                             }
 
-                            // Case 3: Work already completed
-                            attendance.checkInTime > 0 && attendance.checkOutTime != null -> {
-                                showCompletedWorkState(
-                                    checkInTimestamp = attendance.checkInTime,
-                                    checkOutTimestamp = attendance.checkOutTime,
-                                    totalBreakDuration = attendance.totalBreakTime
-                                )
-                            }
+                            // Default case: No valid state found, reset UI
                             else -> {
                                 resetUI()
                             }
@@ -340,13 +342,12 @@ class HomeFragment : Fragment() {
                 txtBreak.visibility = View.GONE
                 txtTime.text = "00:00:00"
 
-                // Save directly as Absent record
                 val attendanceRecord = AttendanceRecord(
                     employeeId = userId,
                     employeeName = employeeName ?: "",
                     date = getTodayDateString(),
                     status = "Absent",
-                    checkInTime = 0L,
+                    checkInTime = null, // Set to null instead of 0L
                     checkOutTime = null,
                     totalWorkDuration = null,
                     totalBreakTime = 0L,
@@ -437,7 +438,7 @@ class HomeFragment : Fragment() {
 
                         firestore.collection("attendance")
                             .document(attendanceId)
-                            .set(updatedRecord) // overwrite with updated data class
+                            .set(updatedRecord)
                             .addOnFailureListener {
                                 Toast.makeText(requireContext(), "Failed to update break status", Toast.LENGTH_SHORT).show()
                             }
@@ -479,11 +480,11 @@ class HomeFragment : Fragment() {
             date = getTodayDateString(),
             status = initialStatus,
             checkInTime = checkInTime,
-            checkOutTime = null,                // not set yet
-            totalWorkDuration = null,           // not set yet
+            checkOutTime = null,
+            totalWorkDuration = null,
             totalBreakTime = 0L,
             isOnBreak = false,
-            breakStartTime = null,              // not set yet
+            breakStartTime = null,
             createdAt = System.currentTimeMillis(),
             lastUpdated = System.currentTimeMillis()
         )

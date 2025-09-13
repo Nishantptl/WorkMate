@@ -17,7 +17,6 @@ import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import java.io.IOException
 
-
 class EmployeeFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
@@ -25,6 +24,8 @@ class EmployeeFragment : Fragment() {
     private lateinit var employeeList: ArrayList<Employee>
     private lateinit var db: FirebaseFirestore
     private lateinit var btnAddEmployee: ImageButton
+
+    private var adminOrganization: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,21 +39,41 @@ class EmployeeFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         employeeList = arrayListOf()
-
         employeeAdapter = AddEmployeeAdapter(employeeList)
-
         recyclerView.adapter = employeeAdapter
-        btnAddEmployee.setOnClickListener {
-            showAddDialog()
-        }
 
-        fetchEmployees()
+        btnAddEmployee.setOnClickListener { showAddDialog() }
+
+        fetchAdminOrganization()
         return view
     }
 
+    private fun fetchAdminOrganization() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        db.collection("admin").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    adminOrganization = doc.getString("organization")
+                    Log.d("EmployeeFragment", "Admin organization: $adminOrganization")
+                    fetchEmployees()
+                } else {
+                    Log.w("EmployeeFragment", "Admin document not found.")
+                }
+            }
+            .addOnFailureListener {
+                Log.e("EmployeeFragment", "Failed to fetch admin organization", it)
+            }
+    }
+
     private fun fetchEmployees() {
-        FirebaseFirestore.getInstance()
-            .collection("employee")
+        if (adminOrganization.isNullOrEmpty()) {
+            // Try again after adminOrganization is fetched
+            Log.w("Firestore", "Admin organization not loaded yet.")
+            return
+        }
+        db.collection("employee")
+            .whereEqualTo("organization", adminOrganization)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
                     Log.e("Firestore", "Error fetching employees", e)
@@ -128,17 +149,22 @@ class EmployeeFragment : Fragment() {
                                 "email" to email,
                                 "role" to role,
                                 "joiningDate" to joiningDate,
-                                "status" to status
+                                "status" to status,
+                                "organization" to adminOrganization
                             )
                             db.collection("employee")
                                 .document(userId)
                                 .set(userMap)
-                            sendEmailToEmployee(name, email, password, department, joiningDate)
+                            sendEmailToEmployee(name, email, password, department, joiningDate, adminOrganization)
                         }
                         .addOnFailureListener { e ->
                             Toast.makeText(requireContext(),
                                 "Auth error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                         }
+                }
+                else {
+                    Toast.makeText(requireContext(),
+                        "Email and password are required", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -150,7 +176,8 @@ class EmployeeFragment : Fragment() {
         email: String,
         password: String,
         department: String,
-        joiningDate: String
+        joiningDate: String,
+        adminOrganization: String?
     ) {
         val url = "https://api.sendgrid.com/v3/mail/send"
         val apiKey = requireContext().getString(R.string.api_key)
@@ -165,6 +192,7 @@ class EmployeeFragment : Fragment() {
             <table border='1' cellpadding='6' cellspacing='0'>
               <tr><td>Email</td><td>$email</td></tr>
               <tr><td>Password</td><td>$password</td></tr>
+              <tr><td>Organization</td><td>$adminOrganization</td></tr>
               <tr><td>Department</td><td>$department</td></tr>
               <tr><td>Joining Date</td><td>$joiningDate</td></tr>
             </table>
@@ -209,73 +237,5 @@ class EmployeeFragment : Fragment() {
                 Log.i("SendGrid", "Response Body: $responseBody")
             }
         })
-    }
-
-    private fun showUpdateDialog(employee: Employee) {
-        val dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_add_employee, null)
-
-        val edtName = dialogView.findViewById<EditText>(R.id.edtName)
-        val edtDepartment = dialogView.findViewById<EditText>(R.id.edtDepartment)
-        val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
-        val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
-        val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
-        val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
-
-        edtName.setText(employee.name)
-        edtDepartment.setText(employee.department)
-        edtEmail.setText(employee.email)
-        txtJoiningDate.setText(employee.joiningDate)
-        edtPassword.visibility = View.GONE
-
-        edtJoiningDate.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
-            val year = calendar.get(java.util.Calendar.YEAR)
-            val month = calendar.get(java.util.Calendar.MONTH)
-            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-
-            val datePicker = android.app.DatePickerDialog(requireContext(),
-                { _, selectedYear, selectedMonth, selectedDay ->
-                    txtJoiningDate.setText("$selectedDay-${selectedMonth + 1}-$selectedYear")
-                }, year, month, day
-            )
-            datePicker.show()
-        }
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Update Employee")
-            .setView(dialogView)
-            .setPositiveButton("Update") { _, _ ->
-                val name = edtName.text.toString()
-                val department = edtDepartment.text.toString()
-                val email = edtEmail.text.toString()
-                val joiningDate = txtJoiningDate.text.toString()
-                    val updates = mapOf(
-                        "name" to name,
-                        "department" to department,
-                        "email" to email,
-                        "joiningDate" to joiningDate
-                    )
-                    db.collection("employee")
-                        .document(employee.id)
-                        .update(updates)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-    private fun toggleEmployeeStatus(employee: Employee) {
-        val newStatus = if (employee.status == "active") "inactive" else "active"
-
-        FirebaseFirestore.getInstance()
-            .collection("employee")
-            .document(employee.id)
-            .update("status", newStatus)
-            .addOnSuccessListener {
-                Toast.makeText(requireContext(), "Status updated to $newStatus", Toast.LENGTH_SHORT).show()
-                fetchEmployees()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 }

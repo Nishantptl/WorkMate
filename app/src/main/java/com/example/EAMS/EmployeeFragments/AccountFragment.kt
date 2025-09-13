@@ -14,6 +14,7 @@ class AccountFragment : Fragment() {
 
     private lateinit var txtUserName: TextView
     private lateinit var txtUserEmail: TextView
+    private lateinit var txtUserOrganization: TextView
 
     private lateinit var layoutEditProfile: LinearLayout
     private lateinit var layoutCheckInOut: LinearLayout
@@ -33,6 +34,7 @@ class AccountFragment : Fragment() {
         // Initialize Views
         txtUserName = view.findViewById(R.id.txtUserName)
         txtUserEmail = view.findViewById(R.id.txtUserEmail)
+        txtUserOrganization = view.findViewById(R.id.txtUserOrganization)
 
         layoutEditProfile = view.findViewById(R.id.layoutEditProfile)
         layoutCheckInOut = view.findViewById(R.id.layoutCheckInOut)
@@ -57,6 +59,7 @@ class AccountFragment : Fragment() {
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
                         txtUserName.text = document.getString("name") ?: "Employee"
+                        txtUserOrganization.text = document.getString("organization") ?: "Organization"
                     }
                 }
                 .addOnFailureListener {

@@ -15,9 +15,8 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Welcome Text -->
         <TextView
-            android:id="@+id/tv_welcome"
+            android:id="@+id/txtWelcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Welcome, Admin"
@@ -25,9 +24,17 @@
             android:textSize="28sp"
             android:textStyle="bold" />
 
-        <!-- Date Text -->
         <TextView
-            android:id="@+id/tv_date"
+            android:id="@+id/txtOrganization"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Organization Name"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/txtDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -35,7 +42,6 @@
             android:textColor="@color/black"
             android:textSize="14sp" />
 
-        <!-- Total Employees Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

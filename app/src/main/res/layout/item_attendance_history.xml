@@ -27,7 +27,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="26 Aug 2025"
+                android:text="Date"
                 android:textColor="@android:color/black"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -66,14 +66,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="In: 09:15 AM"
+                android:text="In: -"
                 android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/txtHistoryCheckOut"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Out: 06:30 PM"
+                android:text="Out: -"
                 android:textSize="16sp" />
 
         </LinearLayout>
@@ -84,7 +84,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Total: 08h 15m"
+            android:text="Total: -"
             android:textColor="@android:color/black"
             android:textSize="16sp"
             android:textStyle="bold" />

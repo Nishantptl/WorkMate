@@ -5,8 +5,8 @@ data class AttendanceRecord(
     val employeeName: String = "",
     val date: String = "",
     val status: String = "",
-    val checkInTime: Long = 0L,
-    val checkOutTime: Long? = null,         // Nullable
+    val checkInTime: Long? = null,
+    val checkOutTime: Long? = null,
     val totalWorkDuration: Long? = null,    // Nullable
     val totalBreakTime: Long = 0L,
     val isOnBreak: Boolean = false,

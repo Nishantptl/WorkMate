@@ -8,5 +8,6 @@ data class Employee(
     var role: String = "EMPLOYEE",
     var department: String = "",
     var joiningDate: String = "",
-    var status: String? = "active"
+    var status: String? = "active",
+    var organization: String = ""
 )

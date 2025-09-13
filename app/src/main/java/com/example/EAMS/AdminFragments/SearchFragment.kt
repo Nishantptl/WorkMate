@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.*
 import com.example.EAMS.Adapters.EmployeeAdapter
 import com.example.EAMS.Model.Employee
 import com.example.EAMS.R
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class SearchFragment : Fragment() {
@@ -19,8 +20,12 @@ class SearchFragment : Fragment() {
     private lateinit var rvEmployees: RecyclerView
     private lateinit var txtEmptyState: TextView
     private lateinit var employeeAdapter: EmployeeAdapter
+
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
     private var fullEmployeeList = ArrayList<Employee>()
+    private var orgName: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,22 +44,40 @@ class SearchFragment : Fragment() {
         )
         rvEmployees.adapter = employeeAdapter
 
-        fetchEmployees()
+        // Get current admin’s organization first, then fetch employees of that org only
+        fetchAdminOrganization()
 
         edtSearch.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s.toString().trim()
-                filterEmployees(query)
+                filterEmployees(s.toString().trim())
             }
         })
 
         return view
     }
 
-    private fun fetchEmployees() {
+    private fun fetchAdminOrganization() {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("admin").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                orgName = doc.getString("organization")
+                if (orgName.isNullOrEmpty()) {
+                    showEmptyMessage("Organization not found.")
+                    return@addOnSuccessListener
+                }
+                fetchEmployeesOfOrg(orgName!!)
+            }
+            .addOnFailureListener {
+                showEmptyMessage("Failed to get organization.")
+            }
+    }
+
+    private fun fetchEmployeesOfOrg(organization: String) {
         db.collection("employee")
+            .whereEqualTo("organization", organization)
             .get()
             .addOnSuccessListener { result ->
                 val list = ArrayList<Employee>()
@@ -64,9 +87,8 @@ class SearchFragment : Fragment() {
                     list.add(employee)
                 }
                 fullEmployeeList = list
-
                 if (list.isEmpty()) {
-                    showEmptyMessage("No employees available")
+                    showEmptyMessage("No employees in $organization")
                     rvEmployees.visibility = View.GONE
                 } else {
                     rvEmployees.visibility = View.VISIBLE
@@ -82,32 +104,18 @@ class SearchFragment : Fragment() {
     }
 
     private fun filterEmployees(query: String) {
-        if (query.isEmpty()) {
-            if (fullEmployeeList.isEmpty()) {
-                showEmptyMessage("No employees available")
-                rvEmployees.visibility = View.GONE
-            } else {
-                rvEmployees.visibility = View.VISIBLE
-                txtEmptyState.visibility = View.GONE
-                employeeAdapter.updateList(fullEmployeeList) // reset full list
-            }
-            return
-        }
-
-        val filtered = fullEmployeeList.filter {
-            it.name.contains(query, ignoreCase = true)
-        }
+        val filtered = if (query.isEmpty()) fullEmployeeList else
+            fullEmployeeList.filter { it.name.contains(query, ignoreCase = true) }
 
         if (filtered.isEmpty()) {
             rvEmployees.visibility = View.GONE
-            showEmptyMessage("No employees found.\nTry using different letters.")
+            showEmptyMessage("No employees found.")
         } else {
             rvEmployees.visibility = View.VISIBLE
             txtEmptyState.visibility = View.GONE
             employeeAdapter.updateList(ArrayList(filtered))
         }
     }
-
 
     private fun showEmptyMessage(message: String) {
         txtEmptyState.text = message
@@ -121,44 +129,30 @@ class SearchFragment : Fragment() {
         val edtName = dialogView.findViewById<EditText>(R.id.edtName)
         val edtDepartment = dialogView.findViewById<EditText>(R.id.edtDepartment)
         val edtEmail = dialogView.findViewById<EditText>(R.id.edtEmail)
-        val edtJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
-        val txtJoiningDate = dialogView.findViewById<TextView>(R.id.txtJoiningDate)
         val edtPassword = dialogView.findViewById<EditText>(R.id.edtPassword)
+        val layoutJoiningDate = dialogView.findViewById<LinearLayout>(R.id.layoutJoiningDate)
 
+        // Pre-fill values
         edtName.setText(employee.name)
         edtDepartment.setText(employee.department)
         edtEmail.setText(employee.email)
-        txtJoiningDate.setText(employee.joiningDate)
+
+        // Hide password field if not needed
         edtPassword.visibility = View.GONE
+        layoutJoiningDate.visibility = View.GONE
 
-        edtJoiningDate.setOnClickListener {
-            val calendar = java.util.Calendar.getInstance()
-            val year = calendar.get(java.util.Calendar.YEAR)
-            val month = calendar.get(java.util.Calendar.MONTH)
-            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-
-            val datePicker = android.app.DatePickerDialog(requireContext(),
-                { _, selectedYear, selectedMonth, selectedDay ->
-                    txtJoiningDate.setText("$selectedDay-${selectedMonth + 1}-$selectedYear")
-                }, year, month, day
-            )
-            datePicker.show()
-        }
+        // Joining date view is completely ignored/removed
 
         AlertDialog.Builder(requireContext())
             .setTitle("Update Employee")
             .setView(dialogView)
             .setPositiveButton("Update") { _, _ ->
-                var name = edtName.text.toString()
-                var department = edtDepartment.text.toString()
-                var email = edtEmail.text.toString()
-                var joiningDate = txtJoiningDate.text.toString()
                 val updates = mapOf(
-                    "name" to name,
-                    "department" to department,
-                    "email" to email,
-                    "joiningDate" to joiningDate
+                    "name" to edtName.text.toString(),
+                    "department" to edtDepartment.text.toString(),
+                    "email" to edtEmail.text.toString()
                 )
+
                 db.collection("employee")
                     .document(employee.id)
                     .update(updates)
@@ -172,18 +166,13 @@ class SearchFragment : Fragment() {
                                 name = updates["name"] as String
                                 department = updates["department"] as String
                                 email = updates["email"] as String
-                                joiningDate = updates["joiningDate"] as String
                             }
                         }
-
-                        // Reapply current filter so UI refreshes immediately
-                        val query = edtSearch.text.toString().trim()
-                        filterEmployees(query)
+                        filterEmployees(edtSearch.text.toString().trim())
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
-
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -192,26 +181,17 @@ class SearchFragment : Fragment() {
     private fun toggleEmployeeStatus(employee: Employee) {
         val newStatus = if (employee.status == "active") "inactive" else "active"
 
-        FirebaseFirestore.getInstance()
-            .collection("employee")
+        db.collection("employee")
             .document(employee.id)
             .update("status", newStatus)
             .addOnSuccessListener {
                 Toast.makeText(requireContext(), "Status updated to $newStatus", Toast.LENGTH_SHORT).show()
-
-                // Update local list
                 val index = fullEmployeeList.indexOfFirst { it.id == employee.id }
-                if (index != -1) {
-                    fullEmployeeList[index].status = newStatus
-                }
-
-                // Reapply current filter
-                val query = edtSearch.text.toString().trim()
-                filterEmployees(query)
+                if (index != -1) fullEmployeeList[index].status = newStatus
+                filterEmployees(edtSearch.text.toString().trim())
             }
             .addOnFailureListener { e ->
                 Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
-
 }

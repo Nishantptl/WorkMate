@@ -17,6 +17,10 @@ import java.util.concurrent.TimeUnit
 class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) :
     RecyclerView.Adapter<AttendanceHistoryAdapter.HistoryViewHolder>() {
 
+    private val fullDateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    private val serverDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
     class HistoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val date: TextView = itemView.findViewById(R.id.txtHistoryDate)
         val status: TextView = itemView.findViewById(R.id.txtHistoryStatus)
@@ -35,50 +39,36 @@ class AttendanceHistoryAdapter(private val historyList: List<AttendanceRecord>) 
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
         val record = historyList[position]
 
-        // Formatters for time and date
-        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault()) // e.g., 09:30 AM
-
-        // Set Date
-        // The date from Firestore is "yyyy-MM-dd", we parse and reformat it
-        val parsedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(record.date)
-        holder.date.text = if (parsedDate != null) dateFormat.format(parsedDate) else record.date
+        try {
+            val parsedDate = serverDateFormat.parse(record.date)
+            holder.date.text = parsedDate?.let { fullDateFormat.format(it) } ?: record.date
+        } catch (e: Exception) {
+            holder.date.text = record.date
+        }
 
         holder.status.text = record.status
-        when (record.status) {
-            "Present" -> holder.status.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, R.color.Present)
-            )
-            "Late" -> holder.status.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, R.color.Late)
-            )
-            "Half Day" ->holder.status.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, R.color.HalfDay)
-            )
-            "Absent" -> holder.status.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, R.color.Absent)
-            )
-            else -> holder.status.setBackgroundColor(Color.GRAY)
+        val statusColor = when (record.status) {
+            "Present" -> R.color.Present
+            "Late" -> R.color.Late
+            "Half Day" -> R.color.HalfDay
+            "Absent" -> R.color.Absent
+            else -> android.R.color.black
         }
+        holder.status.setBackgroundColor(ContextCompat.getColor(holder.itemView.context, statusColor))
 
+        holder.checkIn.text = record.checkInTime?.let {
+            "In: ${timeFormat.format(Date(it))}"
+        } ?: "In: -"
 
-        // Set Check-in and Check-out times
-        holder.checkIn.text = "In: ${timeFormat.format(Date(record.checkInTime))}"
-        holder.checkOut.text = if (record.checkOutTime != null) {
-            "Out: ${timeFormat.format(Date(record.checkOutTime))}"
-        } else {
-            "Out: --:--"
-        }
+        holder.checkOut.text = record.checkOutTime?.let {
+            "Out: ${timeFormat.format(Date(it))}"
+        } ?: "Out: -"
 
-        // Set Total Work Duration
-        val duration = record.totalWorkDuration
-        if (duration != null) {
+        holder.totalHours.text = record.totalWorkDuration?.let { duration ->
             val hours = TimeUnit.MILLISECONDS.toHours(duration)
             val minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60
-            holder.totalHours.text = String.format("Total: %02dh %02dm", hours, minutes)
-        } else {
-            holder.totalHours.text = "Total: --h --m"
-        }
+            String.format("Total: %02dh %02dm", hours, minutes)
+        } ?: "Total: --h --m"
     }
 
     override fun getItemCount() = historyList.size

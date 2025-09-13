@@ -15,6 +15,7 @@ class AddEmployeeAdapter(
         val txtEmail: TextView = itemView.findViewById(R.id.txtEmployeeEmail)
         val txtDepartment: TextView = itemView.findViewById(R.id.txtDepartment)
         val txtJoiningDate: TextView = itemView.findViewById(R.id.txtJoiningDate)
+        val txtOrganization: TextView = itemView.findViewById(R.id.txtOrganization)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmployeeViewHolder {
@@ -29,6 +30,7 @@ class AddEmployeeAdapter(
         holder.txtEmail.text = employee.email
         holder.txtDepartment.text = employee.department
         holder.txtJoiningDate.text = employee.joiningDate
+        holder.txtOrganization.text = employee.organization
     }
 
     override fun getItemCount(): Int = employeeList.size

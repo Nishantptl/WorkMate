@@ -21,6 +21,7 @@ class EmployeeAdapter(
         val btnToggleStatus: ImageButton = itemView.findViewById(R.id.btnToggleStatus)
         val txtDepartment: TextView = itemView.findViewById(R.id.txtDepartment)
         val txtJoiningDate: TextView = itemView.findViewById(R.id.txtJoiningDate)
+        val txtOrganization: TextView = itemView.findViewById(R.id.txtOrganization)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmployeeViewHolder {
@@ -35,6 +36,7 @@ class EmployeeAdapter(
         holder.txtEmail.text = employee.email
         holder.txtDepartment.text = employee.department
         holder.txtJoiningDate.text = employee.joiningDate
+        holder.txtOrganization.text = employee.organization
 
         if (employee.status == "active") {
             holder.btnToggleStatus.setImageResource(R.drawable.ic_active)

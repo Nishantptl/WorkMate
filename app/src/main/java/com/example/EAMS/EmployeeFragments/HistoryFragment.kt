@@ -66,9 +66,9 @@ class HistoryFragment : Fragment() {
                     val record = AttendanceRecord(
                         date = document.getString("date") ?: "",
                         status = document.getString("status") ?: "N/A",
-                        checkInTime = document.getLong("checkInTime") ?: 0,
-                        checkOutTime = document.getLong("checkOutTime") ?: 0,
-                        totalWorkDuration = document.getLong("totalWorkDuration") ?: 0
+                        checkInTime = document.getLong("checkInTime"),
+                        checkOutTime = document.getLong("checkOutTime"),
+                        totalWorkDuration = document.getLong("totalWorkDuration")
                     )
                     historyList.add(record)
                 }
