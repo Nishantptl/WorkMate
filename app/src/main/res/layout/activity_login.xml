@@ -24,7 +24,7 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_marginBottom="16dp"
-            android:src="@drawable/app_logo_3"/>
+            android:src="@drawable/app_logo"/>
 
         <TextView
             android:id="@+id/txtWelcome"
@@ -176,7 +176,7 @@
         android:visibility="gone"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="@id/btnLogIn"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btnLogIn"
         tools:visibility="visible" />
 

@@ -22,7 +22,6 @@ class HistoryFragment : Fragment() {
     private val historyList = mutableListOf<AttendanceRecord>()
 
     private lateinit var blurOverlay: FrameLayout
-    private lateinit var contentLayout: LinearLayout
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
@@ -37,7 +36,6 @@ class HistoryFragment : Fragment() {
         historyRecyclerView = view.findViewById(R.id.historyRecyclerView)
         txtNoHistory = view.findViewById(R.id.txtNoHistory)
         blurOverlay = view.findViewById(R.id.blurOverlay)
-        contentLayout = view.findViewById(R.id.contentLayout)
 
         historyRecyclerView.layoutManager = LinearLayoutManager(context)
         historyAdapter = AttendanceHistoryAdapter(historyList)

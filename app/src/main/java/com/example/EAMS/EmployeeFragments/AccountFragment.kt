@@ -19,11 +19,9 @@ class AccountFragment : Fragment() {
     private lateinit var layoutEditProfile: LinearLayout
     private lateinit var layoutCheckInOut: LinearLayout
     private lateinit var layoutAttendanceHistory: LinearLayout
-    private lateinit var layoutHelp: LinearLayout
     private lateinit var layoutLogout: LinearLayout
 
     private lateinit var blurOverlay: FrameLayout
-    private lateinit var scrollProfile: ScrollView
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
@@ -40,12 +38,10 @@ class AccountFragment : Fragment() {
         txtUserOrganization = view.findViewById(R.id.txtUserOrganization)
 
         blurOverlay = view.findViewById(R.id.blurOverlay)
-        scrollProfile = view.findViewById(R.id.scrollProfile)
 
         layoutEditProfile = view.findViewById(R.id.layoutEditProfile)
         layoutCheckInOut = view.findViewById(R.id.layoutCheckInOut)
         layoutAttendanceHistory = view.findViewById(R.id.layoutAttendanceHistory)
-        layoutHelp = view.findViewById(R.id.layoutHelp)
         layoutLogout = view.findViewById(R.id.layoutLogout)
 
         loadUserProfile()
@@ -93,12 +89,6 @@ class AccountFragment : Fragment() {
 
         layoutAttendanceHistory.setOnClickListener {
             (activity as? EmployeeDashboardActivity)?.setSelectedTab(R.id.nav_history)
-        }
-
-
-        layoutHelp.setOnClickListener {
-            Toast.makeText(context, "Help clicked", Toast.LENGTH_SHORT).show()
-            // TODO: Navigate to Help/Support page
         }
 
         layoutLogout.setOnClickListener {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
@@ -27,10 +28,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Date"
                 android:textColor="@android:color/black"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="13 Sep 2025" />
 
             <!-- Status (e.g., Present, Late, Half Day) -->
             <TextView
@@ -40,9 +41,9 @@
                 android:background="#4CAF50"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="4dp"
-                android:text="Present"
                 android:textColor="@android:color/white"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                tools:text="Present" />
 
         </LinearLayout>
 
@@ -56,6 +57,7 @@
 
         <!-- Middle row for Check-in and Check-out times -->
         <LinearLayout
+            android:id="@+id/layoutTimes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -66,15 +68,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="In: -"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                tools:text="In: 09:00 AM" />
 
             <TextView
                 android:id="@+id/txtHistoryCheckOut"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Out: -"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                tools:text="Out: 05:30 PM" />
 
         </LinearLayout>
 
@@ -84,10 +86,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Total: -"
             android:textColor="@android:color/black"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:text="Total: 08h 30m" />
 
     </LinearLayout>
 
