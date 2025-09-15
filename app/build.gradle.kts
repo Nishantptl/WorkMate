@@ -5,17 +5,21 @@ plugins {
 }
 
 android {
-    namespace = "com.example.EAMS"
+    namespace = "com.example.workmate"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.EAMS"
+        applicationId = "com.example.workmate"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -25,14 +29,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField( "String", "SENDGRID_API_KEY", "\"${project.property("SENDGRID_API_KEY")}\"")
+        }
+        debug {
+            buildConfigField ("String", "SENDGRID_API_KEY", "\"${project.property("SENDGRID_API_KEY")}\"")
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 
@@ -48,6 +56,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     // Firebase BoM
+    implementation("androidx.fragment:fragment-ktx:1.8.9")
     implementation (platform("com.google.firebase:firebase-bom:34.1.0"))
     implementation("com.google.firebase:firebase-auth:24.0.1")
     implementation("com.google.firebase:firebase-database:22.0.0")

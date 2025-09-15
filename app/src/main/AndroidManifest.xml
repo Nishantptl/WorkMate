@@ -15,6 +15,7 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/app_logo"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.EmployeeAttendanceManagementSystem">
         <activity
             android:name=".Activities.ViewEmployeeActivity"
