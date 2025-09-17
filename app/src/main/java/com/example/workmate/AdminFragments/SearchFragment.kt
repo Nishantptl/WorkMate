@@ -12,7 +12,9 @@ import androidx.recyclerview.widget.*
 import com.example.workmate.Adapters.EmployeeAdapter
 import com.example.workmate.Model.*
 import com.example.workmate.R
+import com.example.workmate.ViewModels.AdminViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
 class SearchFragment : Fragment() {
 
@@ -26,6 +28,7 @@ class SearchFragment : Fragment() {
     private val db = FirebaseFirestore.getInstance()
     private var fullEmployeeList = ArrayList<Employee>()
     private val adminViewModel: AdminViewModel by activityViewModels()
+    private var employeeListener: ListenerRegistration? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -76,34 +79,35 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // Replace your existing fetchEmployeesOfOrg function with this one
+
     private fun fetchEmployeesOfOrg(organization: String) {
         showLoading(true)
-        db.collection("employee")
+        // Clean up any old listener to prevent duplicates
+        employeeListener?.remove()
+
+        employeeListener = db.collection("employee")
             .whereEqualTo("organization", organization)
-            .get()
-            .addOnSuccessListener { result ->
+            .addSnapshotListener { snapshot, error ->
+                showLoading(false)
+                if (error != null) {
+                    Log.e("SearchFragment", "Error listening for employees", error)
+                    showEmptyMessage("Error loading employees")
+                    return@addSnapshotListener
+                }
+
                 val list = ArrayList<Employee>()
-                for (doc in result) {
-                    val employee = doc.toObject(Employee::class.java)
-                    employee.id = doc.id
-                    list.add(employee)
+                if (snapshot != null) {
+                    for (doc in snapshot) {
+                        val employee = doc.toObject(Employee::class.java)
+                        employee.id = doc.id
+                        list.add(employee)
+                    }
                 }
+
                 fullEmployeeList = list
-                if (list.isEmpty()) {
-                    showEmptyMessage("No employees in $organization")
-                    rvEmployees.visibility = View.GONE
-                } else {
-                    rvEmployees.visibility = View.VISIBLE
-                    txtEmptyState.visibility = View.GONE
-                    employeeAdapter.updateList(list)
-                }
-                showLoading(false)
-            }
-            .addOnFailureListener { e ->
-                Log.e("SearchFragment", "Error fetching employees", e)
-                showEmptyMessage("Error loading employees")
-                rvEmployees.visibility = View.GONE
-                showLoading(false)
+                // Re-apply the current search text to the new data
+                filterEmployees(edtSearch.text.toString().trim())
             }
     }
 
@@ -158,17 +162,6 @@ class SearchFragment : Fragment() {
                     .update(updates)
                     .addOnSuccessListener {
                         Toast.makeText(requireContext(), "Employee updated", Toast.LENGTH_SHORT).show()
-
-                        // Update local list
-                        val index = fullEmployeeList.indexOfFirst { it.id == employee.id }
-                        if (index != -1) {
-                            fullEmployeeList[index].apply {
-                                name = updates["name"] as String
-                                department = updates["department"] as String
-                                email = updates["email"] as String
-                            }
-                        }
-                        filterEmployees(edtSearch.text.toString().trim())
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -186,12 +179,14 @@ class SearchFragment : Fragment() {
             .update("status", newStatus)
             .addOnSuccessListener {
                 Toast.makeText(requireContext(), "Status updated to $newStatus", Toast.LENGTH_SHORT).show()
-                val index = fullEmployeeList.indexOfFirst { it.id == employee.id }
-                if (index != -1) fullEmployeeList[index].status = newStatus
-                filterEmployees(edtSearch.text.toString().trim())
             }
             .addOnFailureListener { e ->
                 Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        employeeListener?.remove()
     }
 }

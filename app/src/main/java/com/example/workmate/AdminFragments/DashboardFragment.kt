@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.workmate.R
 import com.example.workmate.Model.*
+import com.example.workmate.ViewModels.AdminViewModel
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
@@ -80,11 +81,59 @@ class DashboardFragment : Fragment() {
             if (!orgName.isNullOrEmpty()) {
                 txtOrganization.text = orgName
                 fetchAttendanceData(orgName)
+                fetchTotalEmployeeCount(orgName)
+                listenForAttendanceChanges(orgName)
             } else {
                 txtOrganization.text = "Organization Not Found"
                 Toast.makeText(requireContext(), "Could not verify organization.", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun fetchTotalEmployeeCount(organizationName: String) {
+        db.collection("employee")
+            .whereEqualTo("organization", organizationName)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                txtTotalEmployee.text = "Total Employees: ${snapshot.size()}"
+            }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun listenForAttendanceChanges(organizationName: String) {
+        showLoading(true)
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        db.collection("attendance")
+            .whereEqualTo("date", today)
+            .whereEqualTo("employeeOrg", organizationName)
+            .addSnapshotListener { snapshot, error ->
+                showLoading(false)
+                if (error != null) {
+                    Toast.makeText(requireContext(), "Error listening for attendance.", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
+
+                if (snapshot == null) return@addSnapshotListener
+
+                var present = 0; var late = 0; var halfDay = 0; var absent = 0
+                for (doc in snapshot) {
+                    when (doc.getString("status")) {
+                        "Present" -> present++
+                        "Late" -> late++
+                        "Half Day" -> halfDay++
+                        "Absent" -> absent++
+                    }
+                }
+
+                txtPresentCount.text = present.toString()
+                txtAbsentCount.text = absent.toString()
+                txtHalfDayCount.text = halfDay.toString()
+                txtLateCount.text = late.toString()
+
+                setupChart(present, late, halfDay, absent)
+            }
     }
 
     private fun fetchAdminName() {
@@ -104,7 +153,6 @@ class DashboardFragment : Fragment() {
                 txtWelcome.text = "Welcome"
             }
     }
-
 
     @SuppressLint("SetTextI18n")
     private fun fetchAttendanceData(organizationName: String) {

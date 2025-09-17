@@ -17,6 +17,11 @@
         android:title="Search" />
 
     <item
+        android:id="@+id/nav_leave"
+        android:icon="@drawable/ic_calendar"
+        android:title="Leave"/>
+
+    <item
         android:id="@+id/nav_report"
         android:icon="@drawable/ic_report"
         android:title="Report"/>

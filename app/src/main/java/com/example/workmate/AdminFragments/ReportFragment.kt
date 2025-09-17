@@ -13,7 +13,9 @@ import com.example.workmate.R
 import com.example.workmate.Adapters.ReportEmployeeAdapter
 import com.example.workmate.Model.*
 import com.example.workmate.Activities.ViewEmployeeActivity
+import com.example.workmate.ViewModels.AdminViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
 class ReportFragment : Fragment() {
 
@@ -26,6 +28,7 @@ class ReportFragment : Fragment() {
     private val employeeList = mutableListOf<ReportEmployee>()
     private val db = FirebaseFirestore.getInstance()
     private val adminViewModel: AdminViewModel by activityViewModels()
+    private var employeeListener: ListenerRegistration? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -82,22 +85,26 @@ class ReportFragment : Fragment() {
 
     private fun loadEmployees(organization: String) {
         showLoading(true)
-        db.collection("employee")
+        employeeListener?.remove()
+
+        employeeListener = db.collection("employee")
             .whereEqualTo("organization", organization)
-            .get()
-            .addOnSuccessListener { result ->
-                employeeList.clear()
-                for (doc in result) {
-                    val employee = doc.toObject(ReportEmployee::class.java)
-                    employee.id = doc.id
-                    employeeList.add(employee)
+            .addSnapshotListener { snapshot, error ->
+                showLoading(false)
+                if (error != null) {
+                    Toast.makeText(requireContext(), "Error loading employees", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
-                adapter.updateList(employeeList)
-                showLoading(false)
-            }
-            .addOnFailureListener {
-                Toast.makeText(requireContext(), "Error loading employees", Toast.LENGTH_SHORT).show()
-                showLoading(false)
+                if (snapshot != null) {
+                    employeeList.clear()
+                    for (doc in snapshot) {
+                        val employee = doc.toObject(ReportEmployee::class.java)
+                        employee.id = doc.id
+                        employeeList.add(employee)
+                    }
+                    // Re-apply the current search filter to the newly updated list
+                    filterList(searchBox.text.toString().trim())
+                }
             }
     }
 
@@ -105,5 +112,10 @@ class ReportFragment : Fragment() {
         val filtered = if (query.isEmpty()) employeeList
         else employeeList.filter { it.name.contains(query, ignoreCase = true) }
         adapter.updateList(filtered)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        employeeListener?.remove()
     }
 }

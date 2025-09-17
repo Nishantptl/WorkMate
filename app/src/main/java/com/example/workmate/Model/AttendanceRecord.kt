@@ -3,6 +3,7 @@ package com.example.workmate.Model
 data class AttendanceRecord(
     val employeeId: String = "",
     val employeeName: String = "",
+    val employeeOrg: String = "",
     val date: String = "",
     val status: String = "",
     val checkInTime: Long? = null,

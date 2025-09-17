@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.workmate.R
 import com.example.workmate.Adapters.AttendanceHistoryAdapter
 import com.example.workmate.Model.*
+import com.example.workmate.ViewModels.EmployeeViewModel
 
 class HistoryFragment : Fragment() {
 

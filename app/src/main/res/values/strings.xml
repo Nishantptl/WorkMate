@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">WorkMate</string>
     <string name="default_web_client_id">504292767530-jml35h7sfv3ppho3aue7lr71njulbn4q.apps.googleusercontent.com</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

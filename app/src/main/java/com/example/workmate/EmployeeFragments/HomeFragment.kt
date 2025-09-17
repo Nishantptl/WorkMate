@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.workmate.Model.*
 import com.example.workmate.R
+import com.example.workmate.ViewModels.EmployeeViewModel
 
 class HomeFragment : Fragment() {
 

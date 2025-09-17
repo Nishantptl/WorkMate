@@ -1,5 +1,6 @@
 package com.example.workmate.Activities
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
@@ -34,9 +35,11 @@ class NewUserActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_new_user)
 
+        // --- Firebase Initialization ---
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
 
+        // --- View Initialization ---
         edtName = findViewById(R.id.edtName)
         edtEmail = findViewById(R.id.edtEmail)
         edtPassword = findViewById(R.id.edtPassword)
@@ -52,13 +55,26 @@ class NewUserActivity : AppCompatActivity() {
 
         loadOrganizations()
 
+        // --- Event Listeners ---
+        setupListeners()
+    }
+
+    private fun setupListeners() {
         spinnerOrganization.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?, view: View?, position: Int, id: Long
-            ) {
-                selectedOrganization = if (position > 0) companyList[position] else null
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selection = companyList[position]
+
+                if (selection == "Add New Organization...") {
+                    showAddOrganizationDialog()
+                } else if (position > 0) {
+                    selectedOrganization = selection
+                } else {
+                    selectedOrganization = null
+                }
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) { selectedOrganization = null }
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                selectedOrganization = null
+            }
         }
 
         btnRegister.setOnClickListener { registerClicked() }
@@ -71,6 +87,61 @@ class NewUserActivity : AppCompatActivity() {
         imgPasswordToggle.setOnClickListener { togglePasswordVisibility() }
         imgConfirmPasswordToggle.setOnClickListener { toggleConfirmPasswordVisibility() }
     }
+
+    private fun showAddOrganizationDialog() {
+        val builder = AlertDialog.Builder(this)
+        val inflater = this.layoutInflater
+        // Inflate the custom layout
+        val dialogView = inflater.inflate(R.layout.dialog_add_organization, null)
+        // Get the EditText from the inflated layout
+        val input = dialogView.findViewById<EditText>(R.id.edtOrganizationName)
+
+        // Set the custom view and configure the dialog
+        builder.setView(dialogView)
+            .setPositiveButton("Add") { _, _ ->
+                val orgName = input.text.toString().trim()
+                if (orgName.isNotEmpty()) {
+                    addNewOrganization(orgName)
+                } else {
+                    Toast.makeText(this, "Name cannot be empty.", Toast.LENGTH_SHORT).show()
+                    spinnerOrganization.setSelection(0) // Reset on failure
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.cancel()
+            }
+            .setOnCancelListener {
+                // Also reset spinner if the dialog is cancelled by back press or touching outside
+                spinnerOrganization.setSelection(0)
+            }
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+
+    /**
+     * Adds the new organization to Firestore and updates the spinner.
+     */
+    private fun addNewOrganization(orgName: String) {
+        val newOrg = hashMapOf("name" to orgName)
+        firestore.collection("organizations").add(newOrg)
+            .addOnSuccessListener {
+                val adapter = spinnerOrganization.adapter as ArrayAdapter<String>
+                val insertPosition = companyList.size - 1 // Before "Add New..."
+                adapter.insert(orgName, insertPosition)
+                adapter.notifyDataSetChanged()
+
+                spinnerOrganization.setSelection(insertPosition)
+                selectedOrganization = orgName
+                Toast.makeText(this, "$orgName added successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                showError("Failed to add organization: ${e.localizedMessage}")
+                spinnerOrganization.setSelection(0)
+            }
+    }
+
 
     private fun togglePasswordVisibility() {
         isPasswordVisible = !isPasswordVisible
@@ -103,14 +174,16 @@ class NewUserActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { result ->
                 for (doc in result) {
-                    val name = doc.getString("name")
-                    if (!name.isNullOrEmpty()) companyList.add(name)
+                    doc.getString("name")?.let { companyList.add(it) }
                 }
-                spinnerOrganization.adapter = ArrayAdapter(
+                companyList.add("Add New Organization...")
+
+                val adapter = ArrayAdapter(
                     this,
                     android.R.layout.simple_spinner_dropdown_item,
                     companyList
                 )
+                spinnerOrganization.adapter = adapter
             }
             .addOnFailureListener {
                 showError("Failed to load organizations: ${it.localizedMessage}")
@@ -123,11 +196,14 @@ class NewUserActivity : AppCompatActivity() {
         val password = edtPassword.text.toString().trim()
         val confirmPassword = edtConfirmPassword.text.toString().trim()
 
+        txtErrorMessage.visibility = View.GONE // Hide previous errors
+
         when {
             name.isEmpty() -> showError("Please enter your name")
             selectedOrganization.isNullOrEmpty() -> showError("Please select your organization")
             email.isEmpty() -> showError("Please enter your email")
             password.isEmpty() -> showError("Please enter a password")
+            password.length < 6 -> showError("Password must be at least 6 characters")
             password != confirmPassword -> showError("Passwords do not match")
             else -> registerUser(name, email, password, selectedOrganization!!)
         }

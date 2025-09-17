@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="leave_types">
+        <item>Sick Leave</item>
+        <item>Casual Leave</item>
+        <item>Vacation</item>
+        <item>Maternity Leave</item>
+        <item>Paternity Leave</item>
+        <item>Other</item>
+    </string-array>
+</resources>

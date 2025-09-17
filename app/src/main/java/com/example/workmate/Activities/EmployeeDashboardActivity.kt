@@ -36,6 +36,12 @@ class EmployeeDashboardActivity : AppCompatActivity() {
                         .commit()
                     true
                 }
+                R.id.nav_leave -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.employee_fragment_container, EmployeeLeaveFragment())
+                        .commit()
+                    true
+                }
                 else -> false
             }
         }

@@ -1,4 +1,4 @@
-package com.example.workmate.Model
+package com.example.workmate.ViewModels
 
 import android.os.Handler
 import android.os.Looper
@@ -6,11 +6,14 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.workmate.Model.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class EmployeeViewModel : ViewModel() {
 
@@ -28,6 +31,12 @@ class EmployeeViewModel : ViewModel() {
 
     private val _attendanceHistory = MutableLiveData<List<AttendanceRecord>>()
     val attendanceHistory: LiveData<List<AttendanceRecord>> = _attendanceHistory
+
+    private val _operationStatus = MutableLiveData<Pair<Boolean, String>>()
+    val operationStatus: LiveData<Pair<Boolean, String>> = _operationStatus
+
+    private val _myLeaveRequests = MutableLiveData<List<LeaveRequest>>()
+    val myLeaveRequests: LiveData<List<LeaveRequest>> = _myLeaveRequests
 
     // --- Internal State Management for HomeFragment Logic ---
     private var isClockedIn = false
@@ -64,9 +73,37 @@ class EmployeeViewModel : ViewModel() {
         }
         loadEmployeeDetails()
         loadAttendanceHistory()
+        fetchMyLeaveRequests()
     }
 
-    // --- Public methods for Fragments to call ---
+    fun submitLeaveRequest(request: LeaveRequest) {
+        val newLeaveRef = firestore.collection("leave_requests").document()
+        request.leaveId = newLeaveRef.id
+        newLeaveRef.set(request)
+            .addOnSuccessListener { _operationStatus.postValue(Pair(true, "Request submitted successfully!")) }
+            .addOnFailureListener { _operationStatus.postValue(Pair(false, "Submission failed: ${it.message}")) }
+    }
+
+    fun fetchMyLeaveRequests() {
+        if (userId == null) return
+        firestore.collection("leave_requests").whereEqualTo("userId", userId)
+            .orderBy("requestedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Log.e("EmployeeVM", "Error fetching leave requests", error)
+                    return@addSnapshotListener
+                }
+                val requests = snapshots?.documents?.mapNotNull { doc ->
+                    doc.toObject(LeaveRequest::class.java)?.apply { leaveId = doc.id }
+                }
+                _myLeaveRequests.postValue(requests ?: emptyList())
+            }
+    }
+
+    fun refreshLeaveRequests() {
+        fetchMyLeaveRequests()
+    }
+
     fun handleClockInOut() {
         if (!isClockedIn) clockIn() else clockOut()
     }
@@ -75,14 +112,14 @@ class EmployeeViewModel : ViewModel() {
         if (!isBreak) startBreak() else resumeFromBreak()
     }
 
-    // --- Data Loading Logic ---
-    private fun loadEmployeeDetails() {
+    fun loadEmployeeDetails() {
         if (userId == null) return
         _homeUiState.value = _homeUiState.value?.copy(isLoading = true)
         firestore.collection("employee").document(userId).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val profile = Employee(
+                        uid = userId,
                         name = doc.getString("name") ?: "Employee",
                         email = auth.currentUser?.email ?: "",
                         organization = doc.getString("organization") ?: "Organization"
@@ -102,15 +139,15 @@ class EmployeeViewModel : ViewModel() {
         firestore.collection("attendance")
             .whereEqualTo("employeeId", userId)
             .orderBy("date", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { documents ->
-                _attendanceHistory.value = documents.toObjects(AttendanceRecord::class.java)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Log.e("ViewModel", "Error listening to history", error)
+                    return@addSnapshotListener
+                }
+                val history = snapshots?.toObjects(AttendanceRecord::class.java)
+                _attendanceHistory.postValue(history ?: emptyList())
             }
-            .addOnFailureListener { Log.e("ViewModel", "Error loading history", it) }
     }
-
-
-    // --- Clock In/Out and Break Logic (moved from Fragment) ---
 
     private fun checkTodayAttendance() {
         if (userId == null) return
@@ -132,6 +169,10 @@ class EmployeeViewModel : ViewModel() {
                         att.checkInTime != null -> restoreInProgressState(att)
                     }
                 }
+                _homeUiState.value = _homeUiState.value?.copy(isLoading = false) // Hide loading here
+            }.addOnFailureListener {
+                resetState()
+                _homeUiState.value = _homeUiState.value?.copy(isLoading = false) // Hide loading on failure
             }
     }
 
@@ -269,19 +310,18 @@ class EmployeeViewModel : ViewModel() {
         showAbsentState()
     }
 
-
-    // --- Firestore Operations ---
-
     private fun saveCheckInToFirebase(checkIn: Long) {
         if (userId == null) return
+        val organizationName = _employeeProfile.value?.organization ?: ""
         val initialStatus = if (checkIn > getOfficialStartTime()) "Late" else "Present"
         wasLate = initialStatus == "Late"
         val record = AttendanceRecord(
-            employeeId = userId, employeeName = employeeName, date = getTodayDateString(),
-            status = initialStatus, checkInTime = checkIn
+            employeeId = userId, employeeName = employeeName, employeeOrg = organizationName,
+            date = getTodayDateString(), status = initialStatus, checkInTime = checkIn
         )
         firestore.collection("attendance").add(record)
             .addOnSuccessListener { ref -> currentAttendanceId = ref.id }
+            .addOnFailureListener { Log.e("ViewModel", "Failed to save Check-In", it) }
     }
 
     private fun saveCheckOutToFirebase(checkOut: Long, workMs: Long) {
@@ -293,6 +333,7 @@ class EmployeeViewModel : ViewModel() {
             "isOnBreak" to false, "lastUpdated" to System.currentTimeMillis()
         )
         firestore.collection("attendance").document(currentAttendanceId!!).update(updates)
+            .addOnFailureListener { Log.e("ViewModel", "Failed to save Check-Out", it) }
     }
 
     private fun updateBreakStatusInFirebase(onBreak: Boolean) {
@@ -304,15 +345,18 @@ class EmployeeViewModel : ViewModel() {
             "lastUpdated" to System.currentTimeMillis()
         )
         firestore.collection("attendance").document(currentAttendanceId!!).update(updates)
+            .addOnFailureListener { Log.e("ViewModel", "Failed to update break status", it) }
     }
 
     private fun saveAbsentToFirebase() {
         if (userId == null) return
+        val organizationName = _employeeProfile.value?.organization ?: ""
         val record = AttendanceRecord(
-            employeeId = userId, employeeName = employeeName,
+            employeeId = userId, employeeName = employeeName, employeeOrg = organizationName,
             date = getTodayDateString(), status = "Absent"
         )
         firestore.collection("attendance").add(record)
+            .addOnFailureListener { Log.e("ViewModel", "Failed to save Absent record", it) }
     }
 
 
@@ -359,6 +403,6 @@ class EmployeeViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        handler.removeCallbacks(timerRunnable) // Important: clean up handler to prevent memory leaks
+        handler.removeCallbacks(timerRunnable)
     }
 }

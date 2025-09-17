@@ -25,6 +25,7 @@ class AdminDashboardActivity : AppCompatActivity() {
                 R.id.nav_employees -> loadFragment(EmployeeFragment())
                 R.id.nav_search -> loadFragment(SearchFragment())
                 R.id.nav_report -> loadFragment(ReportFragment())
+                R.id.nav_leave -> loadFragment(AdminLeaveFragment())
             }
             true
         }
