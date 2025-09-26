@@ -17,7 +17,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Welcome Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,8 +42,8 @@
                     tools:text="Monday, 13 September 2025" />
             </LinearLayout>
 
-            <!-- Main Action Card -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardClockIn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
@@ -57,6 +56,17 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="24dp">
+
+                    <TextView
+                        android:id="@+id/txtSelectedTaskInfo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="@android:color/holo_blue_dark"
+                        android:visibility="gone"
+                        tools:text="Selected Task: Design UI"
+                        tools:visibility="visible"
+                        android:layout_marginBottom="8dp"/>
 
                     <TextView
                         android:id="@+id/txtTime"
@@ -96,6 +106,7 @@
 
             <!-- Today's Summary Card -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardSummary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -140,7 +151,6 @@
                         android:orientation="horizontal"
                         android:layout_marginTop="10dp">
 
-                        <!-- Check-in Column -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -172,7 +182,6 @@
                             android:layout_marginEnd="8dp"
                             android:background="#E0E0E0" />
 
-                        <!-- Check-out Column -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -204,7 +213,6 @@
                             android:layout_marginEnd="8dp"
                             android:background="#E0E0E0" />
 
-                        <!-- Total Hours Column -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -228,13 +236,74 @@
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
-
                     </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Your Tasks Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardEmployeeTasks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Your Active Tasks"
+                        android:textColor="@android:color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="#E0E0E0" />
+                    <TextView
+                        android:id="@+id/txtTaskSelectionMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Please select a task to check in."
+                        android:textColor="@android:color/holo_red_dark"
+                        android:gravity="center"
+                        android:padding="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerEmployeeTasks"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="100dp"
+                        tools:listitem="@layout/item_employee_task" 
+                        tools:itemCount="3"/>
+
+                    <TextView
+                        android:id="@+id/txtNoTasksAssigned"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="No active tasks assigned to you."
+                        android:textSize="16sp"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <!-- Break Button Card -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardBreakButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -279,4 +348,3 @@
     </FrameLayout>
 
 </FrameLayout>
-

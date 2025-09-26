@@ -12,6 +12,11 @@
         android:title="Employees" />
 
     <item
+        android:id="@+id/nav_project"
+        android:icon="@drawable/ic_project"
+        android:title="Projects"/>
+
+    <item
         android:id="@+id/nav_leave"
         android:icon="@drawable/ic_calendar"
         android:title="Leave"/>

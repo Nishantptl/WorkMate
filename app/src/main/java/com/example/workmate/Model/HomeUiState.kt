@@ -1,6 +1,7 @@
 package com.example.workmate.Model
 
 data class HomeUiState(
+    val showTaskSelectionMessage: Boolean = false,
     val employeeName: String = "",
     val formattedDate: String = "",
     val timerText: String = "00:00:00",

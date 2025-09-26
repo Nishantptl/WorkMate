@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F5F5"
-    tools:context=".AdminFragments.EmployeeFragment">
+    tools:context=".AdminFragments.ProjectFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
             android:layout_marginStart="24dp"
             android:layout_marginTop="24dp"
             android:layout_marginEnd="24dp"
-            android:text="Manage Employees"
+            android:text="Manage Projects"
             android:textColor="@android:color/black"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
             android:layout_marginEnd="24dp"
-            android:text="View and add employees to your organization"
+            android:text="View and add projects to your organization"
             android:textColor="@android:color/darker_gray"
             android:textSize="16sp" />
 
@@ -50,12 +50,12 @@
                 android:orientation="horizontal">
 
                 <EditText
-                    android:id="@+id/edtSearchEmployee"
+                    android:id="@+id/edtSearchProject"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
-                    android:hint="Search by name or email"
+                    android:hint="Search by project name"
                     android:inputType="text"
                     android:padding="16dp" />
 
@@ -76,14 +76,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Search for employees to see results"
+            android:text="Search for projects to see results"
             android:textColor="@android:color/darker_gray"
             android:textSize="16sp"
             android:visibility="visible"
             tools:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerEmployees"
+            android:id="@+id/recyclerProjects"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -92,18 +92,18 @@
             android:clipToPadding="false"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            tools:listitem="@layout/item_employee" />
+            tools:listitem="@layout/item_project" />
 
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btnAddEmployee"
+        android:id="@+id/btnAddProject"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="25dp"
         android:layout_marginEnd="25dp"
-        android:contentDescription="Add New Employee"
+        android:contentDescription="Add New Project"
         android:src="@drawable/ic_add"
         app:tint="@color/black" />
 

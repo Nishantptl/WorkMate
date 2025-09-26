@@ -21,6 +21,8 @@
         <activity
             android:name=".Activities.AddProjectActivity"
             android:exported="false" />
+        <activity android:name=".Activities.ViewProjectActivity"
+            android:exported="false"/>
         <activity
             android:name=".Activities.ViewEmployeeActivity"
             android:exported="false" />

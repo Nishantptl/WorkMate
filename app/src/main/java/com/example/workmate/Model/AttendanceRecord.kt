@@ -13,5 +13,7 @@ data class AttendanceRecord(
     val isOnBreak: Boolean = false,
     val breakStartTime: Long? = null,       // Nullable
     val createdAt: Long = 0L,
-    val lastUpdated: Long = 0L
+    val lastUpdated: Long = 0L,
+    var selectedTaskId: String? = null,
+    var selectedTaskName: String? = null
 )
